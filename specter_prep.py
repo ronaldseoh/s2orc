@@ -52,6 +52,7 @@ def parse_metadata_shard(data_dir, shard_num, save_dir, fields=None):
 
         output_citation_data[paper['paper_id']] = citations
 
+    # Save to a json file
     output_file = open(
         os.path.join(save_dir, "data_{}.json".format(shard_num)), 'w+')
     
@@ -71,19 +72,34 @@ def add_indirect_citations(temp_dir, shard_num):
         direct_citations = citation_data[paper_id].keys()
         
         pool = multiprocessing.Pool()
-        
-        search_tasks = multiprocessing.JoinableQueue()
+
         search_results = multiprocessing.Queue()
         
+        # Search each other shards simultaneously
         for n in other_shard_nums:
             p = pool.apply_async(
                 get_all_citations_by_ids,
-                args=(temp_dir, n, direct_citations))
+                args=(temp_dir, n, direct_citations, search_results))
 
         pool.close()
         pool.join()
+        
+        # Add indirect citations to citation_data
+        while not search_results.empty():
+            citations = search_results.get()
+            
+            for indirect_id in citations:
+                citations[indirect_id] = {"count": 1} # 1 = "a citation of a citation"
+
+    # Save the modified citation_data to a file
+    output_file = open(
+        os.path.join(temp_dir, "data_{}_with_indirect.json".format(shard_num)), 'w+')
+    
+    json.dump(citation_data, output_file, indent=2)
+    
+    output_file.close()
                     
-def get_all_citations_by_ids(temp_dir, shard_num, ids):
+def get_all_citations_by_ids(temp_dir, shard_num, ids, results_queue):
     
     citations = set()
     
@@ -93,9 +109,10 @@ def get_all_citations_by_ids(temp_dir, shard_num, ids):
     matching_ids = set(ids).intersection(set(citation_data).keys())
     
     for paper_id in matching_ids:
-        citations.union(set(citation_data[paper_id].keys()))
+        if paper_id in citation_data.keys():
+            citations.union(set(citation_data[paper_id].keys()))
         
-    return citations
+    results_queue.put(citations)
 
 
 if __name__ == '__main__':
@@ -123,5 +140,7 @@ if __name__ == '__main__':
     metadata_shard_pool.close()
     metadata_shard_pool.join()
     
-    # Scan intermediate data_{}.json files (with direct citation only) for indirect citations
-    
+    # Scan intermediate data_{}.json files (currently with direct citation only)
+    # for indirect citations
+    for i in range(100):
+        add_indirect_citations('temp', i)
