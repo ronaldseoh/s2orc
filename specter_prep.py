@@ -60,13 +60,16 @@ def parse_metadata_shard(data_dir, shard_num, save_dir, fields=None):
     
     output_file.close()
 
-def add_indirect_citations(temp_dir, shard_num):
+def read_json(manager_dict, key, json_path):
+    
+    manager_dict[key] = json.load(open(json_path, 'r'))
+
+def add_indirect_citations(manager_dict, shard_num):
     
     other_shard_nums = list(range(100))
     other_shard_nums.remove(shard_num)
     
-    citation_data = json.load(
-        open(os.path.join(temp_dir, "data_{}.json".format(shard_num)), 'r'))
+    citation_data = manager_dict[shard_num]
     
     for paper_id in tqdm.tqdm(citation_data.keys()):
         direct_citations = citation_data[paper_id].keys()
@@ -79,7 +82,7 @@ def add_indirect_citations(temp_dir, shard_num):
         for n in other_shard_nums:
             p = pool.apply_async(
                 get_all_citations_by_ids,
-                args=(temp_dir, n, direct_citations, search_results))
+                args=(manager_dict, n, direct_citations, search_results))
 
         pool.close()
         pool.join()
@@ -99,12 +102,11 @@ def add_indirect_citations(temp_dir, shard_num):
     
     output_file.close()
                     
-def get_all_citations_by_ids(temp_dir, shard_num, ids, results_queue):
+def get_all_citations_by_ids(manager_dict, shard_num, ids, results_queue):
     
     citations = set()
     
-    citation_data = json.load(
-        open(os.path.join(temp_dir, "data_{}.json".format(shard_num)), 'r').read())
+    citation_data = manager_dict[shard_num]
         
     matching_ids = set(ids).intersection(set(citation_data).keys())
     
@@ -140,6 +142,19 @@ if __name__ == '__main__':
     metadata_shard_pool.close()
     metadata_shard_pool.join()
     
+    # Load all data_{}.json into memory for further processing.
+    manager = multiprocessing.Manager()
+    temp_data = manager.dict()
+    temp_data_loading_pool = multiprocessing.Pool(processes=10)
+    
+    for i in range(100):
+        p = temp_data_loading_pool.apply_async(
+            read_json, 
+            args=(temp_data, i, os.path.join('temp', 'data_{}.json'.format(i)))
+
+    temp_data_loading_pool.close()
+    temp_data_loading_pool.join()
+    
     # Scan intermediate data_{}.json files (currently with direct citation only)
     # for indirect citations
     print("Adding indirect citations...")
@@ -147,7 +162,7 @@ if __name__ == '__main__':
     
     for i in range(100):
         print("Shard {}".format(i))
-        p = indirect_citations_pool.apply_async(add_indirect_citations, args=('temp', i))
+        p = indirect_citations_pool.apply_async(add_indirect_citations, args=(temp_data, i))
 
     indirect_citations_pool.close()
     indirect_citations_pool.join()
