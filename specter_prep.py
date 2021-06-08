@@ -150,7 +150,7 @@ if __name__ == '__main__':
     for i in range(100):
         p = temp_data_loading_pool.apply_async(
             read_json, 
-            args=(temp_data, i, os.path.join('temp', 'data_{}.json'.format(i)))
+            args=(temp_data, i, os.path.join('temp', 'data_{}.json'.format(i))))
 
     temp_data_loading_pool.close()
     temp_data_loading_pool.join()
