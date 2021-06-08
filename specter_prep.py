@@ -20,7 +20,7 @@ def parse_pdf_parses_shard(data_dir, shard_num, save_dir):
 
 # Process metadata jsonl into `data.json` as required by SPECTER.
 # Need to get all the citation information.
-def parse_metadata_shard(data_dir, shard_num, save_dir):
+def parse_metadata_shard(data_dir, shard_num, save_dir, fields=None):
     
     output_citation_data = {}
     
@@ -29,13 +29,20 @@ def parse_metadata_shard(data_dir, shard_num, save_dir):
     
     reader = jsonlines.Reader(metadata_file)
     
+    print("Metadata shard {} start".format(shard_num))
+    
     for paper in tqdm.tqdm(reader.iter(skip_invalid=True)):
         # Only consider papers that have outbound citations available
-        if not paper['has_outbound_citations']:
+        if not paper['has_outbound_citations'] or not paper['mag_field_of_study']:
+            continue
+            
+        # if args.fields_of_study is specified, only consider the papers from
+        # those fields
+        if fields and not set(fields).isdisjoint(set(paper['mag_field_of_study'])):
             continue
             
         if paper['paper_id'] in output_citation_data.keys():
-            print("Shard {} Duplicate paper id {} found. Please check.".format(shard_num, paper['paper_id']))
+            print("Metadata shard {} Duplicate paper id {} found. Please check.".format(shard_num, paper['paper_id']))
         
         # Iterate through paper ids of outbound citations
         citations = {}
@@ -52,9 +59,6 @@ def parse_metadata_shard(data_dir, shard_num, save_dir):
     
     output_file.close()
 
-def main():
-    
-    pass
 
 if __name__ == '__main__':
 
@@ -69,3 +73,16 @@ if __name__ == '__main__':
 
     # create save_dir
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
+    
+    # Parse `metadata` from s2orc to create `data.json` for SPECTER
+    metadata_shard_jobs = []
+    
+    for i in range(99):
+
+        p = multiprocessing.Process(
+            target=parse_metadata_shard, 
+            args=(os.path.join(args.data_dir, 'metadata'),))
+            
+        metadata_shard_jobs.append(p)
+
+        p.start()
