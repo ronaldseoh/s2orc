@@ -4,6 +4,7 @@ import multiprocessing
 import argparse
 import gzip
 import json
+import copy
 
 import jsonlines
 import tqdm
@@ -64,12 +65,18 @@ def read_json(manager_dict, key, json_path):
     
     manager_dict[key] = json.load(open(json_path, 'r'))
 
+    print("Loaded", json_path, "into memory.")
+
 def add_indirect_citations(manager_dict, shard_num):
     
     other_shard_nums = list(range(100))
     other_shard_nums.remove(shard_num)
     
     citation_data = manager_dict[shard_num]
+    
+    output_citation_data = copy.deepcopy(citation_data)
+    
+    print("Adding indirect citations shard {}".format(shard_num), end='', flush=True)
     
     for paper_id in tqdm.tqdm(citation_data.keys()):
         direct_citations = citation_data[paper_id].keys()
@@ -92,13 +99,13 @@ def add_indirect_citations(manager_dict, shard_num):
             citations = search_results.get()
             
             for indirect_id in citations:
-                citations[indirect_id] = {"count": 1} # 1 = "a citation of a citation"
+                output_citation_data[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
 
     # Save the modified citation_data to a file
     output_file = open(
         os.path.join(temp_dir, "data_{}_with_indirect.json".format(shard_num)), 'w+')
     
-    json.dump(citation_data, output_file, indent=2)
+    json.dump(output_citation_data, output_file, indent=2)
     
     output_file.close()
                     
@@ -157,11 +164,10 @@ if __name__ == '__main__':
     
     # Scan intermediate data_{}.json files (currently with direct citation only)
     # for indirect citations
-    print("Adding indirect citations...")
+    
     indirect_citations_pool = multiprocessing.Pool(processes=10)
     
     for i in range(100):
-        print("Shard {}".format(i))
         p = indirect_citations_pool.apply_async(add_indirect_citations, args=(temp_data, i))
 
     indirect_citations_pool.close()
