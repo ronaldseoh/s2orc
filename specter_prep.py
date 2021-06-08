@@ -78,10 +78,9 @@ if __name__ == '__main__':
     metadata_shard_jobs = []
     
     for i in range(99):
-
         p = multiprocessing.Process(
             target=parse_metadata_shard, 
-            args=(os.path.join(args.data_dir, 'metadata'),))
+            args=(os.path.join(args.data_dir, 'metadata'), i, args.save_dir, args.fields_of_study))
             
         metadata_shard_jobs.append(p)
 
