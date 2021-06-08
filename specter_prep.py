@@ -75,13 +75,12 @@ if __name__ == '__main__':
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
     
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
-    metadata_shard_jobs = []
+    metadata_shard_pool = multiprocessing.Pool()
     
-    for i in range(99):
-        p = multiprocessing.Process(
-            target=parse_metadata_shard, 
+    for i in range(100):
+        p = metadata_shard_pool.apply_async(
+            parse_metadata_shard, 
             args=(os.path.join(args.data_dir, 'metadata'), i, args.save_dir, args.fields_of_study))
-            
-        metadata_shard_jobs.append(p)
 
-        p.start()
+    metadata_shard_pool.close()
+    metadata_shard_pool.join()
