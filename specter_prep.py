@@ -66,7 +66,7 @@ def add_indirect_citations(temp_dir, shard_num):
     other_shard_nums.remove(shard_num)
     
     citation_data = json.load(
-        open(os.path.join(temp_dir, "data_{}.json".format(shard_num)), 'r').read())
+        open(os.path.join(temp_dir, "data_{}.json".format(shard_num)), 'r'))
     
     for paper_id in tqdm.tqdm(citation_data.keys()):
         direct_citations = citation_data[paper_id].keys()
