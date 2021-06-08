@@ -68,7 +68,7 @@ def add_indirect_citations(temp_dir, shard_num):
     citation_data = json.load(
         open(os.path.join(temp_dir, "data_{}.json".format(shard_num)), 'r').read())
     
-    for paper_id in citation_data.keys():
+    for paper_id in tqdm.tqdm(citation_data.keys()):
         direct_citations = citation_data[paper_id].keys()
         
         pool = multiprocessing.Pool()
@@ -142,5 +142,8 @@ if __name__ == '__main__':
     
     # Scan intermediate data_{}.json files (currently with direct citation only)
     # for indirect citations
+    print("Adding indirect citations...")
+    
     for i in range(100):
+        print("Shard {}".format(i))
         add_indirect_citations('temp', i)
