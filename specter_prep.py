@@ -71,7 +71,7 @@ def add_indirect_citations(temp_dir, shard_num):
     for paper_id in tqdm.tqdm(citation_data.keys()):
         direct_citations = citation_data[paper_id].keys()
         
-        pool = multiprocessing.Pool()
+        pool = multiprocessing.Pool(processes=10)
 
         search_results = multiprocessing.Queue()
         
@@ -130,7 +130,7 @@ if __name__ == '__main__':
     pathlib.Path('temp').mkdir(exist_ok=True)
     
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
-    metadata_shard_pool = multiprocessing.Pool()
+    metadata_shard_pool = multiprocessing.Pool(processes=10)
     
     for i in range(100):
         p = metadata_shard_pool.apply_async(
@@ -143,7 +143,11 @@ if __name__ == '__main__':
     # Scan intermediate data_{}.json files (currently with direct citation only)
     # for indirect citations
     print("Adding indirect citations...")
+    indirect_citations_pool = multiprocessing.Pool(processes=10)
     
     for i in range(100):
         print("Shard {}".format(i))
-        add_indirect_citations('temp', i)
+        p = indirect_citations_pool.apply_async(add_indirect_citations, args=('temp', i))
+
+    indirect_citations_pool.close()
+    indirect_citations_pool.join()
