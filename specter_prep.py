@@ -59,6 +59,44 @@ def parse_metadata_shard(data_dir, shard_num, save_dir, fields=None):
     
     output_file.close()
 
+def add_indirect_citations(temp_dir, shard_num):
+    
+    other_shard_nums = list(range(100))
+    other_shard_nums.remove(shard_num)
+    
+    citation_data = json.load(
+        open(os.path.join(temp_dir, "data_{}.json".format(shard_num)), 'r').read())
+    
+    for paper_id in citation_data.keys():
+        direct_citations = citation_data[paper_id].keys()
+        
+        pool = multiprocessing.Pool()
+        
+        search_tasks = multiprocessing.JoinableQueue()
+        search_results = multiprocessing.Queue()
+        
+        for n in other_shard_nums:
+            p = pool.apply_async(
+                get_all_citations_by_ids,
+                args=(temp_dir, n, direct_citations))
+
+        pool.close()
+        pool.join()
+                    
+def get_all_citations_by_ids(temp_dir, shard_num, ids):
+    
+    citations = set()
+    
+    citation_data = json.load(
+        open(os.path.join(temp_dir, "data_{}.json".format(shard_num)), 'r').read())
+        
+    matching_ids = set(ids).intersection(set(citation_data).keys())
+    
+    for paper_id in matching_ids:
+        citations.union(set(citation_data[paper_id].keys()))
+        
+    return citations
+
 
 if __name__ == '__main__':
 
@@ -71,8 +109,8 @@ if __name__ == '__main__':
     
     args = parser.parse_args()
 
-    # create save_dir
-    pathlib.Path(args.save_dir).mkdir(exist_ok=True)
+    # create a temp dir
+    pathlib.Path('temp').mkdir(exist_ok=True)
     
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
     metadata_shard_pool = multiprocessing.Pool()
@@ -80,7 +118,10 @@ if __name__ == '__main__':
     for i in range(100):
         p = metadata_shard_pool.apply_async(
             parse_metadata_shard, 
-            args=(os.path.join(args.data_dir, 'metadata'), i, args.save_dir, args.fields_of_study))
+            args=(os.path.join(args.data_dir, 'metadata'), i, 'temp', args.fields_of_study))
 
     metadata_shard_pool.close()
     metadata_shard_pool.join()
+    
+    # Scan intermediate data_{}.json files (with direct citation only) for indirect citations
+    
