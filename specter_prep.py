@@ -86,7 +86,7 @@ def add_indirect_citations(manager_dict, shard_num):
         # Search each other shards simultaneously
         for n in other_shard_nums:
             search_results.append(
-                get_citations_by_ids(manager_dict, n, direct_citations)
+                get_citations_by_ids(manager_dict, n, direct_citations))
 
         # Add indirect citations to citation_data
         for citations in search_results:
