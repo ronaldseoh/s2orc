@@ -92,7 +92,9 @@ def add_indirect_citations(manager_dict, shard_num):
                 args=(manager_dict, n, direct_citations, search_results))
 
         pool.close()
-        pool.join()
+
+        for s in pool:
+            s.wait()
         
         # Add indirect citations to citation_data
         while not search_results.empty():
