@@ -82,18 +82,20 @@ def add_indirect_citations(manager_dict, shard_num):
         direct_citations = citation_data[paper_id].keys()
         
         pool = multiprocessing.Pool(processes=10)
+        process_results = []
 
         search_results = multiprocessing.Queue()
         
         # Search each other shards simultaneously
         for n in other_shard_nums:
-            p = pool.apply_async(
-                get_all_citations_by_ids,
-                args=(manager_dict, n, direct_citations, search_results))
+            process_results.append(
+                pool.apply_async(
+                    get_all_citations_by_ids,
+                    args=(manager_dict, n, direct_citations, search_results)))
 
         pool.close()
 
-        for s in pool:
+        for s in process_results:
             s.wait()
         
         # Add indirect citations to citation_data
