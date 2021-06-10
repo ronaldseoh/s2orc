@@ -69,14 +69,14 @@ def read_json(manager_dict, key, json_path):
 
 def add_indirect_citations(manager_dict, shard_num):
     
-    other_shard_nums = list(range(100))
+    other_shard_nums = list(range(len(manager_dict.keys()))
     other_shard_nums.remove(shard_num)
     
     citation_data = manager_dict[shard_num]
     
     output_citation_data = copy.deepcopy(citation_data)
     
-    print("Adding indirect citations shard {}".format(shard_num), end='', flush=True)
+    print("Adding indirect citations shard {}".format(shard_num))
     
     for paper_id in tqdm.tqdm(citation_data.keys()):
         direct_citations = citation_data[paper_id].keys()
@@ -108,10 +108,9 @@ def get_citations_by_ids(manager_dict, shard_num, ids):
     citation_data = manager_dict[shard_num]
         
     matching_ids = set(ids).intersection(set(citation_data).keys())
-    
+
     for paper_id in matching_ids:
-        if paper_id in citation_data.keys():
-            citations.union(set(citation_data[paper_id].keys()))
+        citations.union(set(citation_data[paper_id].keys()))
         
     return citations
 
@@ -133,7 +132,10 @@ if __name__ == '__main__':
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
     metadata_shard_pool = multiprocessing.Pool(processes=10)
     
-    for i in range(100):
+    # Total number of shards to process
+    shards_total_num = 100
+    
+    for i in range(shards_total_num):
         p = metadata_shard_pool.apply_async(
             parse_metadata_shard, 
             args=(os.path.join(args.data_dir, 'metadata'), i, 'temp', args.fields_of_study))
@@ -142,25 +144,25 @@ if __name__ == '__main__':
     metadata_shard_pool.join()
     
     # Load all data_{}.json into memory for further processing.
-    manager = multiprocessing.Manager()
-    temp_data = manager.dict()
-    temp_data_loading_pool = multiprocessing.Pool(processes=10)
-    
-    for i in range(100):
-        p = temp_data_loading_pool.apply_async(
-            read_json, 
-            args=(temp_data, i, os.path.join('temp', 'data_{}.json'.format(i))))
+    with multiprocessing.Manager() as manager:
+        temp_data = manager.dict()
+        temp_data_loading_pool = multiprocessing.Pool(processes=10)
+        
+        for i in range(shards_total_num):
+            p = temp_data_loading_pool.apply_async(
+                read_json,
+                args=(temp_data, i, os.path.join('temp', 'data_{}.json'.format(i))))
 
-    temp_data_loading_pool.close()
-    temp_data_loading_pool.join()
-    
-    # Scan intermediate data_{}.json files (currently with direct citation only)
-    # for indirect citations
-    
-    indirect_citations_pool = multiprocessing.Pool(processes=10)
-    
-    for i in range(100):
-        p = indirect_citations_pool.apply_async(add_indirect_citations, args=(temp_data, i))
+        temp_data_loading_pool.close()
+        temp_data_loading_pool.join()
+        
+        # Scan intermediate data_{}.json files (currently with direct citation only)
+        # for indirect citations
+        
+        indirect_citations_pool = multiprocessing.Pool(processes=10)
+        
+        for i in range(shards_total_num):
+            p = indirect_citations_pool.apply_async(add_indirect_citations, args=(temp_data, i))
 
-    indirect_citations_pool.close()
-    indirect_citations_pool.join()
+        indirect_citations_pool.close()
+        indirect_citations_pool.join()
