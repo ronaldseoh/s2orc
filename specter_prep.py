@@ -69,7 +69,7 @@ def read_json(manager_dict, key, json_path):
 
 def add_indirect_citations(manager_dict, shard_num):
     
-    other_shard_nums = list(range(len(manager_dict.keys()))
+    other_shard_nums = list(range(len(manager_dict.keys())))
     other_shard_nums.remove(shard_num)
     
     citation_data = manager_dict[shard_num]
