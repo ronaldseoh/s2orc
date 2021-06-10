@@ -107,7 +107,7 @@ def get_citations_by_ids(manager_dict, shard_num, ids):
     
     citation_data = manager_dict[shard_num]
         
-    matching_ids = set(ids).intersection(set(citation_data).keys())
+    matching_ids = set(ids).intersection(set(citation_data.keys()))
 
     for paper_id in matching_ids:
         citations.union(set(citation_data[paper_id].keys()))
