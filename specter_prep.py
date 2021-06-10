@@ -29,7 +29,7 @@ def parse_metadata_shard(data_dir, shard_num, save_dir, fields=None):
         os.path.join(data_dir, 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
     
     reader = jsonlines.Reader(metadata_file)
-    
+
     print("Metadata shard {} start".format(shard_num))
     
     for paper in tqdm.tqdm(reader.iter(skip_invalid=True)):
@@ -80,28 +80,16 @@ def add_indirect_citations(manager_dict, shard_num):
     
     for paper_id in tqdm.tqdm(citation_data.keys()):
         direct_citations = citation_data[paper_id].keys()
-        
-        pool = multiprocessing.Pool(processes=10)
-        process_results = []
 
-        search_results = multiprocessing.Queue()
+        search_results = []
         
         # Search each other shards simultaneously
         for n in other_shard_nums:
-            process_results.append(
-                pool.apply_async(
-                    get_all_citations_by_ids,
-                    args=(manager_dict, n, direct_citations, search_results)))
+            search_results.append(
+                get_citations_by_ids(manager_dict, n, direct_citations)
 
-        pool.close()
-
-        for s in process_results:
-            s.wait()
-        
         # Add indirect citations to citation_data
-        while not search_results.empty():
-            citations = search_results.get()
-            
+        for citations in search_results:
             for indirect_id in citations:
                 output_citation_data[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
 
@@ -113,7 +101,7 @@ def add_indirect_citations(manager_dict, shard_num):
     
     output_file.close()
                     
-def get_all_citations_by_ids(manager_dict, shard_num, ids, results_queue):
+def get_citations_by_ids(manager_dict, shard_num, ids):
     
     citations = set()
     
@@ -125,7 +113,7 @@ def get_all_citations_by_ids(manager_dict, shard_num, ids, results_queue):
         if paper_id in citation_data.keys():
             citations.union(set(citation_data[paper_id].keys()))
         
-    results_queue.put(citations)
+    return citations
 
 
 if __name__ == '__main__':
