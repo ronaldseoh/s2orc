@@ -75,10 +75,12 @@ def add_indirect_citations(manager_dict, shard_num):
     citation_data = manager_dict[shard_num]
     
     output_citation_data = copy.deepcopy(citation_data)
+
+    tqdm_text = "#" + "{}".format(shard_num).zfill(3)
     
-    print("Adding indirect citations shard {}".format(shard_num))
-    
-    for paper_id in tqdm.tqdm(citation_data.keys()):
+    pbar = tqdm.tqdm(total=len(citation_data.keys()), desc=tqdm_text, position=shard_num+1)
+
+    for paper_id in citation_data.keys():
         direct_citations = citation_data[paper_id].keys()
 
         pool = multiprocessing.Pool(processes=10)
