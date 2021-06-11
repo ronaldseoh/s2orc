@@ -20,7 +20,9 @@ def parse_pdf_parses_shard(data_dir, shard_num, save_dir):
 
 # Process metadata jsonl into `data.json` as required by SPECTER.
 # Need to get all the citation information.
-def parse_metadata_shard(data_dir, shard_num, output_citation_data, fields=None):
+def parse_metadata_shard(data_dir, shard_num, fields=None):
+    
+    output_citation_data = {}
     
     metadata_file = gzip.open(
         os.path.join(data_dir, 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
@@ -28,6 +30,8 @@ def parse_metadata_shard(data_dir, shard_num, output_citation_data, fields=None)
     reader = jsonlines.Reader(metadata_file)
 
     tqdm_text = "#" + "{}".format(shard_num).zfill(3)
+    
+    print("Reading metadata shard {}".format(shard_num))
     
     pbar = tqdm.tqdm(desc=tqdm_text, position=shard_num+1)
     
@@ -60,8 +64,12 @@ def parse_metadata_shard(data_dir, shard_num, output_citation_data, fields=None)
         output_citation_data[paper['paper_id']] = citations
         
         pbar.update(1)
+        
+    return output_citation_data
 
-def add_indirect_citations(citation_data_direct, shard_num, citation_data_indirect):
+def add_indirect_citations(citation_data_direct, shard_num):
+    
+    citation_data_indirect = {}
     
     other_shard_nums = list(range(len(citation_data_direct.keys())))
     other_shard_nums.remove(shard_num)
@@ -85,6 +93,8 @@ def add_indirect_citations(citation_data_direct, shard_num, citation_data_indire
                     citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
                     
         pbar.update(1)
+        
+    return citation_data_indirect
                     
 def get_citations_by_ids(citation_data_direct, shard_num, ids):
     
@@ -116,7 +126,6 @@ if __name__ == '__main__':
     manager = multiprocessing.Manager()
     
     citation_data_direct = manager.dict()
-    citation_data_indirect = manager.dict()
     
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
     metadata_read_pool = multiprocessing.Pool(processes=args.num_processes)
@@ -126,10 +135,14 @@ if __name__ == '__main__':
         metadata_read_results.append(
             metadata_read_pool.apply_async(
                 parse_metadata_shard, 
-                args=(os.path.join(args.data_dir, 'metadata'), i, citation_data_direct, args.fields_of_study)))
+                args=(os.path.join(args.data_dir, 'metadata'), i, args.fields_of_study)))
 
     metadata_read_pool.close()
     metadata_read_pool.join()
+
+    for rs in metadata_read_results:
+        for k in rs.keys():
+            citation_data_direct[k] = rs[k]
     
     # Scan intermediate data_{}.json files (currently with direct citation only)
     # for indirect citations
@@ -138,16 +151,23 @@ if __name__ == '__main__':
     
     for i in range(shards_total_num):
         indirect_citations_results.append(
-            indirect_citations_pool.apply_async(add_indirect_citations, args=(citation_data_direct, i, citation_data_indirect)))
+            indirect_citations_pool.apply_async(add_indirect_citations, args=(citation_data_direct, i)))
 
     indirect_citations_pool.close()
     indirect_citations_pool.join()
     
     # Combine citation_data_direct and citation_data_indirect into a single json file.
+    print("Merging direct and indirect citations...")
     citation_data_all = {}
     
-    for k in citation_data_direct.keys():
-        citation_data_all[k] = {**citation_data_direct[k], **citation_data_indirect[k]}
+    for i in range(shards_total_sum):
+        direct = metadata_read_results[i]
+        indirect = indirect_citations_results[i]
+        
+        assert len(direct.keys()) == len(indirect.keys())
+        
+        for paper_id in direct.keys():
+            citation_data_all[paper_id] = {**direct[paper_id], **indirect[paper_id]}
         
     # Write citation_data_all to a file.
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
