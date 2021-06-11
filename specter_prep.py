@@ -122,9 +122,6 @@ if __name__ == '__main__':
     # Total number of shards to process
     shards_total_num = 100
 
-    # create a temp dir
-    pathlib.Path('temp').mkdir(exist_ok=True)
-
     manager = multiprocessing.Manager()
     
     citation_data_direct = manager.dict()
@@ -138,7 +135,7 @@ if __name__ == '__main__':
         metadata_read_results.append(
             metadata_shard_pool.apply_async(
                 parse_metadata_shard, 
-                args=(os.path.join(args.data_dir, 'metadata'), i, citation_data_direct, args.fields_of_study))
+                args=(os.path.join(args.data_dir, 'metadata'), i, citation_data_direct, args.fields_of_study)))
 
     metadata_read_pool.close()
     metadata_read_pool.join()
@@ -146,9 +143,11 @@ if __name__ == '__main__':
     # Scan intermediate data_{}.json files (currently with direct citation only)
     # for indirect citations
     indirect_citations_pool = multiprocessing.Pool(processes=10)
+    indirect_citations_results = []
     
     for i in range(shards_total_num):
-        p = indirect_citations_pool.apply_async(add_indirect_citations, args=(citation_data_direct, i, citation_data_indirect))
+        indirect_citations_results.append(
+            indirect_citations_pool.apply_async(add_indirect_citations, args=(citation_data_direct, i, citation_data_indirect)))
 
     indirect_citations_pool.close()
     indirect_citations_pool.join()
