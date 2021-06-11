@@ -83,7 +83,7 @@ def add_indirect_citations(manager_dict, shard_num):
     for paper_id in citation_data.keys():
         direct_citations = citation_data[paper_id].keys()
 
-        pool = multiprocessing.Pool(processes=10)
+        pool = multiprocessing.Pool(processes=50)
 
         search_results = multiprocessing.Manager().Queue()
         
