@@ -140,7 +140,9 @@ if __name__ == '__main__':
     metadata_read_pool.close()
     metadata_read_pool.join()
 
-    for rs in metadata_read_results:
+    for r in metadata_read_results:
+        rs = r.get()
+
         for k in rs.keys():
             citation_data_direct[k] = rs[k]
     
@@ -161,8 +163,8 @@ if __name__ == '__main__':
     citation_data_all = {}
     
     for i in range(shards_total_sum):
-        direct = metadata_read_results[i]
-        indirect = indirect_citations_results[i]
+        direct = metadata_read_results[i].get()
+        indirect = indirect_citations_results[i].get()
         
         assert len(direct.keys()) == len(indirect.keys())
         
