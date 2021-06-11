@@ -81,15 +81,23 @@ def add_indirect_citations(manager_dict, shard_num):
     for paper_id in tqdm.tqdm(citation_data.keys()):
         direct_citations = citation_data[paper_id].keys()
 
-        search_results = []
+        pool = multiprocessing.Pool(processes=10)
+
+        search_results = multiprocessing.Queue()
         
         # Search each other shards simultaneously
         for n in other_shard_nums:
-            search_results.append(
-                get_citations_by_ids(manager_dict, n, direct_citations))
+            _ = pool.apply_async(
+                get_all_citations_by_ids,
+                args=(manager_dict, n, direct_citations, search_results))
+
+        pool.close()
+        pool.join()
 
         # Add indirect citations to citation_data
-        for citations in search_results:
+        while not search_results.empty():
+            citations = search_results.get()
+            
             for indirect_id in citations:
                 output_citation_data[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
 
@@ -101,7 +109,7 @@ def add_indirect_citations(manager_dict, shard_num):
     
     output_file.close()
                     
-def get_citations_by_ids(manager_dict, shard_num, ids):
+def get_citations_by_ids(manager_dict, shard_num, ids, results_queue):
     
     citations = set()
     
@@ -112,7 +120,7 @@ def get_citations_by_ids(manager_dict, shard_num, ids):
     for paper_id in matching_ids:
         citations.union(set(citation_data[paper_id].keys()))
         
-    return citations
+    results_queue.put(citations)
 
 
 if __name__ == '__main__':
