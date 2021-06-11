@@ -61,12 +61,6 @@ def parse_metadata_shard(data_dir, shard_num, save_dir, fields=None):
     
     output_file.close()
 
-def read_json(manager_dict, key, json_path):
-    
-    manager_dict[key] = json.load(open(json_path, 'r'))
-
-    print("Loaded", json_path, "into memory.")
-
 def add_indirect_citations(manager_dict, shard_num):
     
     other_shard_nums = list(range(len(manager_dict.keys())))
@@ -85,21 +79,20 @@ def add_indirect_citations(manager_dict, shard_num):
 
         pool = multiprocessing.Pool(processes=50)
 
-        search_results = multiprocessing.Manager().Queue()
+        pool_outputs = []
         
         # Search each other shards simultaneously
         for n in other_shard_nums:
-            p = pool.apply_async(
-                get_citations_by_ids,
-                args=(manager_dict, n, direct_citations, search_results))
+            pool_outputs.append(
+                pool.apply_async(
+                    get_citations_by_ids,
+                    args=(manager_dict, n, direct_citations)))
 
         pool.close()
         pool.join()
 
         # Add indirect citations to citation_data
-        while not search_results.empty():
-            citations = search_results.get()
-            
+        for citations in pool_outputs:
             for indirect_id in citations:
                 output_citation_data[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
 
@@ -111,7 +104,7 @@ def add_indirect_citations(manager_dict, shard_num):
     
     output_file.close()
                     
-def get_citations_by_ids(manager_dict, shard_num, ids, results_queue):
+def get_citations_by_ids(manager_dict, shard_num, ids):
     
     citations = set()
     
@@ -122,7 +115,7 @@ def get_citations_by_ids(manager_dict, shard_num, ids, results_queue):
     for paper_id in matching_ids:
         citations.union(set(citation_data[paper_id].keys()))
         
-    results_queue.put(citations)
+    return citations
 
 
 if __name__ == '__main__':
@@ -154,24 +147,29 @@ if __name__ == '__main__':
     metadata_shard_pool.join()
     
     # Load all data_{}.json into memory for further processing.
-    with multiprocessing.Manager() as manager:
-        temp_data = manager.dict()
-        temp_data_loading_pool = multiprocessing.Pool(processes=10)
-        
-        for i in range(shards_total_num):
-            p = temp_data_loading_pool.apply_async(
-                read_json,
-                args=(temp_data, i, os.path.join('temp', 'data_{}.json'.format(i))))
+    temp_data = {}
+    temp_data_loading_pool = multiprocessing.Pool(processes=10)
+    temp_data_loading_results = []
 
-        temp_data_loading_pool.close()
-        temp_data_loading_pool.join()
-        
-        # Scan intermediate data_{}.json files (currently with direct citation only)
-        # for indirect citations
-        indirect_citations_pool = multiprocessing.Pool(processes=10)
-        
-        for i in range(shards_total_num):
-            p = indirect_citations_pool.apply_async(add_indirect_citations, args=(temp_data, i))
+    for i in range(shards_total_num):
+        temp_data_loading_results.append(
+            temp_data_loading_pool.apply_async(
+                lambda json_path: json.load(open(json_path, 'r'))
+                args=(os.path.join('temp', 'data_{}.json'.format(i)),),
+                callback=lambda json_path: print("Loaded", json_path, "into memory.")))
 
-        indirect_citations_pool.close()
-        indirect_citations_pool.join()
+    temp_data_loading_pool.close()
+    temp_data_loading_pool.join()
+    
+    for i in range(shards_total_num):
+        temp_data[i] = temp_data_loading_results[i].get()
+    
+    # Scan intermediate data_{}.json files (currently with direct citation only)
+    # for indirect citations
+    indirect_citations_pool = multiprocessing.Pool(processes=10)
+    
+    for i in range(shards_total_num):
+        p = indirect_citations_pool.apply_async(add_indirect_citations, args=(temp_data, i))
+
+    indirect_citations_pool.close()
+    indirect_citations_pool.join()
