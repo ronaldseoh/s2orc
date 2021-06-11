@@ -1,6 +1,6 @@
 import os
 import pathlib
-import multiprocessing
+import billiard as multiprocessing
 import argparse
 import gzip
 import json
