@@ -27,9 +27,11 @@ def parse_metadata_shard(data_dir, shard_num, output_citation_data, fields=None)
     
     reader = jsonlines.Reader(metadata_file)
 
-    print("Metadata shard {} start".format(shard_num))
+    tqdm_text = "#" + "{}".format(shard_num).zfill(3)
     
-    for paper in tqdm.tqdm(reader.iter(skip_invalid=True)):
+    pbar = tqdm.tqdm(desc=tqdm_text, position=shard_num+1)
+    
+    for paper in reader.iter(skip_invalid=True):
         # Only consider papers that 
         # have outbound citations available, and
         # have MAG field of study specified, and 
@@ -56,6 +58,8 @@ def parse_metadata_shard(data_dir, shard_num, output_citation_data, fields=None)
             citations[out_id] = {"count": 5} # 5 = direct citation
 
         output_citation_data[paper['paper_id']] = citations
+        
+        pbar.update(1)
 
 def add_indirect_citations(citation_data_direct, shard_num, citation_data_indirect):
     
@@ -79,6 +83,8 @@ def add_indirect_citations(citation_data_direct, shard_num, citation_data_indire
                 # doesn't cite it in the first place.
                 if indirect_id not in directly_cited_ids:
                     citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
+                    
+        pbar.update(1)
                     
 def get_citations_by_ids(citation_data_direct, shard_num, directly_cited_ids):
     
