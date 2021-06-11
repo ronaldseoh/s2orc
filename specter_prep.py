@@ -154,7 +154,7 @@ if __name__ == '__main__':
     for i in range(shards_total_num):
         temp_data_loading_results.append(
             temp_data_loading_pool.apply_async(
-                lambda json_path: json.load(open(json_path, 'r'))
+                lambda json_path: json.load(open(json_path, 'r')),
                 args=(os.path.join('temp', 'data_{}.json'.format(i)),),
                 callback=lambda json_path: print("Loaded", json_path, "into memory.")))
 
