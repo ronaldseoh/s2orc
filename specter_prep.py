@@ -86,7 +86,7 @@ def add_indirect_citations(citation_data_direct, shard_num, citation_data_indire
                     
         pbar.update(1)
                     
-def get_citations_by_ids(citation_data_direct, shard_num, directly_cited_ids):
+def get_citations_by_ids(citation_data_direct, shard_num, ids):
     
     citations = set()
         
