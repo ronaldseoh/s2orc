@@ -60,6 +60,14 @@ def parse_metadata_shard(data_dir, shard_num, save_dir, fields=None):
     json.dump(output_citation_data, output_file, indent=2)
     
     output_file.close()
+    
+def read_json(json_path):
+    
+    loaded = json.load(open(json_path, 'r'))
+
+    print("Loaded", json_path, "into memory.")
+    
+    return loaded
 
 def add_indirect_citations(manager_dict, shard_num):
     
@@ -154,9 +162,8 @@ if __name__ == '__main__':
     for i in range(shards_total_num):
         temp_data_loading_results.append(
             temp_data_loading_pool.apply_async(
-                lambda json_path: json.load(open(json_path, 'r')),
-                args=(os.path.join('temp', 'data_{}.json'.format(i)),),
-                callback=lambda json_path: print("Loaded", json_path, "into memory.")))
+                read_json,
+                args=(os.path.join('temp', 'data_{}.json'.format(i)),),))
 
     temp_data_loading_pool.close()
     temp_data_loading_pool.join()
