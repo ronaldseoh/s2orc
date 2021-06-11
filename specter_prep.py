@@ -113,7 +113,7 @@ if __name__ == '__main__':
     
     for i in range(shards_total_num):
         metadata_read_results.append(
-            metadata_shard_pool.apply_async(
+            metadata_read_pool.apply_async(
                 parse_metadata_shard, 
                 args=(os.path.join(args.data_dir, 'metadata'), i, citation_data_direct, args.fields_of_study)))
 
