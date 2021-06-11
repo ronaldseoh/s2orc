@@ -83,12 +83,12 @@ def add_indirect_citations(manager_dict, shard_num):
 
         pool = multiprocessing.Pool(processes=10)
 
-        search_results = multiprocessing.Queue()
+        search_results = multiprocessing.Manager().Queue()
         
         # Search each other shards simultaneously
         for n in other_shard_nums:
-            _ = pool.apply_async(
-                get_all_citations_by_ids,
+            p = pool.apply_async(
+                get_citations_by_ids,
                 args=(manager_dict, n, direct_citations, search_results))
 
         pool.close()
@@ -133,15 +133,15 @@ if __name__ == '__main__':
     parser.add_argument('--fields_of_study', nargs='*', type=str)
     
     args = parser.parse_args()
+    
+    # Total number of shards to process
+    shards_total_num = 100
 
     # create a temp dir
     pathlib.Path('temp').mkdir(exist_ok=True)
     
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
     metadata_shard_pool = multiprocessing.Pool(processes=10)
-    
-    # Total number of shards to process
-    shards_total_num = 100
     
     for i in range(shards_total_num):
         p = metadata_shard_pool.apply_async(
@@ -166,7 +166,6 @@ if __name__ == '__main__':
         
         # Scan intermediate data_{}.json files (currently with direct citation only)
         # for indirect citations
-        
         indirect_citations_pool = multiprocessing.Pool(processes=10)
         
         for i in range(shards_total_num):
