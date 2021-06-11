@@ -1,10 +1,9 @@
 import os
 import pathlib
-import billiard as multiprocessing
+import multiprocessing
 import argparse
 import gzip
 import json
-import copy
 
 import jsonlines
 import tqdm
@@ -51,50 +50,30 @@ def parse_metadata_shard(data_dir, shard_num, output_citation_data, fields=None)
 
         output_citation_data[paper['paper_id']] = citations
 
-def add_indirect_citations(manager_dict, shard_num):
+def add_indirect_citations(citation_data_direct, shard_num, citation_data_indirect):
     
-    other_shard_nums = list(range(len(manager_dict.keys())))
+    other_shard_nums = list(range(len(citation_data_direct.keys())))
     other_shard_nums.remove(shard_num)
-    
-    citation_data = manager_dict[shard_num]
-    
-    output_citation_data = copy.deepcopy(citation_data)
 
     tqdm_text = "#" + "{}".format(shard_num).zfill(3)
     
-    pbar = tqdm.tqdm(total=len(citation_data.keys()), desc=tqdm_text, position=shard_num+1)
+    pbar = tqdm.tqdm(
+        total=len(citation_data_direct[shard_num].keys()), desc=tqdm_text, position=shard_num+1)
 
-    for paper_id in citation_data.keys():
-        direct_citations = citation_data[paper_id].keys()
-
-        pool = multiprocessing.Pool(processes=50)
-
-        pool_outputs = []
+    for paper_id in citation_data_direct[shard_num].keys():
+        directly_cited_ids = citation_data[paper_id].keys()
         
-        # Search each other shards simultaneously
+        # Search each shards
         for n in other_shard_nums:
-            pool_outputs.append(
-                pool.apply_async(
-                    get_citations_by_ids,
-                    args=(manager_dict, n, direct_citations)))
+            indirect_citations = get_citations_by_ids(citation_data_direct, n, directly_cited_ids)
 
-        pool.close()
-        pool.join()
-
-        # Add indirect citations to citation_data
-        for citations in pool_outputs:
-            for indirect_id in citations:
-                output_citation_data[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
-
-    # Save the modified citation_data to a file
-    output_file = open(
-        os.path.join(temp_dir, "data_{}_with_indirect.json".format(shard_num)), 'w+')
-    
-    json.dump(output_citation_data, output_file, indent=2)
-    
-    output_file.close()
+            for indirect_id in indirect_citations:
+                # This indirect citation would serve as a hard negative only if the paper_id
+                # doesn't cite it in the first place.
+                if indirect_id not in directly_cited_ids:
+                    citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
                     
-def get_citations_by_ids(manager_dict, shard_num, ids):
+def get_citations_by_ids(citation_data_direct, shard_num, directly_cited_ids):
     
     citations = set()
     
@@ -116,6 +95,7 @@ if __name__ == '__main__':
     parser.add_argument('save_dir', help='path to a directory to save the processed files.')
 
     parser.add_argument('--fields_of_study', nargs='*', type=str)
+    parser.add_argument('--num_processes', default=10, type=int, help='Number of processes to use.')
     
     args = parser.parse_args()
     
@@ -128,7 +108,7 @@ if __name__ == '__main__':
     citation_data_indirect = manager.dict()
     
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
-    metadata_read_pool = multiprocessing.Pool(processes=10)
+    metadata_read_pool = multiprocessing.Pool(processes=args.num_processes)
     metadata_read_results = []
     
     for i in range(shards_total_num):
@@ -142,7 +122,7 @@ if __name__ == '__main__':
     
     # Scan intermediate data_{}.json files (currently with direct citation only)
     # for indirect citations
-    indirect_citations_pool = multiprocessing.Pool(processes=10)
+    indirect_citations_pool = multiprocessing.Pool(processes=args.num_processes)
     indirect_citations_results = []
     
     for i in range(shards_total_num):
@@ -151,3 +131,17 @@ if __name__ == '__main__':
 
     indirect_citations_pool.close()
     indirect_citations_pool.join()
+    
+    # Combine citation_data_direct and citation_data_indirect into a single json file.
+    citation_data_all = {}
+    
+    for k in citation_data_direct.keys():
+        citation_data_all[k] = {**citation_data_direct[k], **citation_data_indirect[k]}
+        
+    # Write citation_data_all to a file.
+    pathlib.Path(args.save_dir).mkdir(exist_ok=True)
+    output_file = open(os.path.join(args.save_dir, "data.json"), 'w+')
+    
+    json.dump(output_citation_data, output_file, indent=2)
+    
+    output_file.close()
