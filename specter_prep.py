@@ -30,8 +30,15 @@ def parse_metadata_shard(data_dir, shard_num, output_citation_data, fields=None)
     print("Metadata shard {} start".format(shard_num))
     
     for paper in tqdm.tqdm(reader.iter(skip_invalid=True)):
-        # Only consider papers that have outbound citations available
-        if not paper['has_outbound_citations'] or not paper['mag_field_of_study']:
+        # Only consider papers that 
+        # have outbound citations available, and
+        # have MAG field of study specified, and 
+        # PDF parse is available & abstract is included in PDF parse
+        if not paper['has_outbound_citations'] \
+           or not paper['mag_field_of_study'] \
+           or not paper['has_pdf_parse']:
+            continue
+        elif not paper['has_pdf_parsed_abstract']:
             continue
             
         # if args.fields_of_study is specified, only consider the papers from
