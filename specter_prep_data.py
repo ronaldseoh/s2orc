@@ -166,16 +166,20 @@ if __name__ == '__main__':
             citation_data_all[paper_id].update(indirect[paper_id])
 
     # Write citation_data_all to a file.
+    print("Writing data.json to a file.")
+
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
     output_file = open(os.path.join(args.save_dir, "data.json"), 'w+')
 
     json.dump(citation_data_all, output_file, indent=2)
 
     output_file.close()
-    
+
     # Get all paper ids and dump them to a file as well.
+    print("Getting all paper ids ever appearing in data.json.")
     all_paper_ids = get_all_paper_ids(citation_data_all)
     
+    print("Writing all paper ids to a file.")
     all_paper_ids_output_file = open(os.path.join(args.save_dir, "paper_ids.json"), 'w+')
 
     json.dump(all_paper_ids, all_paper_ids_output_file, indent=2)
