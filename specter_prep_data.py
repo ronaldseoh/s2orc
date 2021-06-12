@@ -3,6 +3,7 @@ import pathlib
 import multiprocessing
 import argparse
 import gzip
+import random
 
 import ujson as json
 import jsonlines
@@ -115,12 +116,16 @@ if __name__ == '__main__':
     parser.add_argument('--fields_of_study', nargs='*', type=str)
     parser.add_argument('--num_processes', default=10, type=int, help='Number of processes to use.')
     
-    parser.add_argument('--seed', default=1918, type=int, help='Random seed.')
+    parser.add_argument('--seed', default=321, type=int, help='Random seed.')
     
     parser.add_argument('--query_shard', type=int, help='the shard to be used for extracting query papers.')
     parser.add_argument('--validation_shard', type=int, help='the shard to be used for extracting validation papers.')
 
     args = parser.parse_args()
+
+    # Random seed fix for Python random
+    # Will be used for train/val splitting
+    random.seed(args.seed)
 
     # Total number of shards to process
     shards_total_num = 100
