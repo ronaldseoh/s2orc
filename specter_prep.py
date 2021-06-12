@@ -103,7 +103,7 @@ def get_citations_by_ids(citation_data_direct, ids):
         try:
             citations = citations.union(set(citation_data_direct[paper_id].keys()))
         except:
-            print('paper {} not in citation_data_direct. Skipping.'.format(paper_id))
+            continue
 
     return citations
 
