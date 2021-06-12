@@ -69,7 +69,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     return output_citation_data
 
-def get_indirect_citations(ids, tqdm_position):
+def get_indirect_citations(ids):
 
     citation_data_indirect = {}
 
@@ -78,7 +78,7 @@ def get_indirect_citations(ids, tqdm_position):
     pbar = tqdm.tqdm(
         total=len(ids),
         desc="#" + "{}".format(os.getpid()).zfill(6),
-        position=tqdm_position+1)
+        position=os.getpid()+1)
 
     for paper_id in ids:
         directly_cited_ids = citation_data_direct[paper_id].keys()
@@ -140,7 +140,6 @@ if __name__ == '__main__':
     metadata_read_pool.join()
 
     print("Saving the parsed metadata to a manager dict...")
-    metadata_shard_paper_ids = []
     
     for r in tqdm.tqdm(metadata_read_results):
         rs = r.get()
@@ -156,24 +155,16 @@ if __name__ == '__main__':
     indirect_citations_pool = multiprocessing.Pool(processes=args.num_processes)
     indirect_citations_results = []
 
-    for i in range(shards_total_num):
-        indirect_citations_results.append(
-            indirect_citations_pool.apply_async(
-                get_indirect_citations,
-                args=(metadata_shard_paper_ids[i], i)
-            )
-        )
-
-    indirect_citations_pool.close()
-    indirect_citations_pool.join()
+    for r in indirect_citations_pool.imap_unordered(get_indirect_citations, citation_data_direct.keys()):
+        indirect_citations_results.append(r)
 
     # Combine citation_data_direct and citation_data_indirect into a single json file.
     print("Merging direct and indirect citations...")
 
     citation_data_all = {}
 
-    for i in range(shards_total_num):
-        indirect = indirect_citations_results[i].get()
+    for r in indirect_citations_results:
+        indirect = r.get()
 
         for paper_id in indirect.keys():
             citation_data_all[paper_id] = {**citation_data_direct[paper_id], **indirect[paper_id]}
