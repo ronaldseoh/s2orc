@@ -81,6 +81,8 @@ def get_indirect_citations(citation_data_direct, ids):
     for paper_id in ids:
         directly_cited_ids = citation_data_direct[paper_id].keys()
 
+        citation_data_indirect[paper_id] = {}
+
         # Search each shards
         indirect_citations = get_citations_by_ids(citation_data_direct, directly_cited_ids)
 
