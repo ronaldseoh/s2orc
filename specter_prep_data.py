@@ -149,7 +149,7 @@ if __name__ == '__main__':
     indirect_citations_results = []
     
     indirect_citations_imap_iterator = indirect_citations_pool.imap_unordered(
-        get_indirect_citations, [(paper_id,) for paper_id in citation_data_direct.keys()], chunksize=100)
+        get_indirect_citations, [(paper_id,) for paper_id in citation_data_direct.keys()], chunksize=1000)
 
     for r in tqdm.tqdm(indirect_citations_imap_iterator):
         indirect_citations_results.append(r)
