@@ -160,7 +160,7 @@ if __name__ == '__main__':
     print("Merging direct and indirect citations...")
     citation_data_all = {}
 
-    for i in range(shards_total_sum):
+    for i in range(shards_total_num):
         direct = metadata_read_results[i].get()
         indirect = indirect_citations_results[i].get()
 
