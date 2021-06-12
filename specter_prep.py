@@ -142,9 +142,8 @@ if __name__ == '__main__':
     print("Saving the parsed metadata to a manager dict...")
     
     for r in tqdm.tqdm(metadata_read_results):
+
         rs = r.get()
-        
-        metadata_shard_paper_ids.append(rs.keys())
 
         citation_data_direct.update(rs)
 
