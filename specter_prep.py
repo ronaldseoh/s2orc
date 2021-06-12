@@ -9,6 +9,8 @@ import jsonlines
 import tqdm
 
 
+citation_data_direct = {}
+
 def parse_pdf_parses_shard(data_dir, shard_num, save_dir):
 
     pdf_parses_file = gzip.open(
@@ -67,7 +69,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     return output_citation_data
 
-def get_indirect_citations(citation_data_direct, ids):
+def get_indirect_citations(ids):
 
     citation_data_indirect = {}
 
@@ -95,7 +97,7 @@ def get_indirect_citations(citation_data_direct, ids):
 
     return citation_data_indirect
 
-def get_citations_by_ids(citation_data_direct, ids):
+def get_citations_by_ids(ids):
 
     citations = set()
 
@@ -123,10 +125,6 @@ if __name__ == '__main__':
     # Total number of shards to process
     shards_total_num = 100
 
-    manager = multiprocessing.Manager()
-
-    citation_data_direct = manager.dict()
-
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
     metadata_read_pool = multiprocessing.Pool(processes=args.num_processes)
     metadata_read_results = []
@@ -150,6 +148,8 @@ if __name__ == '__main__':
 
         citation_data_direct.update(rs)
 
+    print("Adding indirect citations...")
+
     # Scan intermediate data_{}.json files (currently with direct citation only)
     # for indirect citations
     indirect_citations_pool = multiprocessing.Pool(processes=args.num_processes)
@@ -157,7 +157,7 @@ if __name__ == '__main__':
 
     for i in range(shards_total_num):
         indirect_citations_results.append(
-            indirect_citations_pool.apply_async(get_indirect_citations, args=(citation_data_direct, metadata_shard_paper_ids[i])))
+            indirect_citations_pool.apply_async(get_indirect_citations, args=(metadata_shard_paper_ids[i])))
 
     indirect_citations_pool.close()
     indirect_citations_pool.join()
@@ -168,13 +168,10 @@ if __name__ == '__main__':
     citation_data_all = {}
 
     for i in range(shards_total_num):
-        direct = metadata_read_results[i].get()
         indirect = indirect_citations_results[i].get()
 
-        assert len(direct.keys()) == len(indirect.keys())
-
-        for paper_id in direct.keys():
-            citation_data_all[paper_id] = {**direct[paper_id], **indirect[paper_id]}
+        for paper_id in indirect.keys():
+            citation_data_all[paper_id] = {**citation_data_direct[paper_id], **indirect[paper_id]}
 
     # Write citation_data_all to a file.
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
