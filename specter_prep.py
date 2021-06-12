@@ -86,7 +86,7 @@ def get_indirect_citations(ids):
         citation_data_indirect[paper_id] = {}
 
         # Search each shards
-        indirect_citations = get_citations_by_ids(citation_data_direct, directly_cited_ids)
+        indirect_citations = get_citations_by_ids(directly_cited_ids)
 
         for indirect_id in indirect_citations:
             # This indirect citation would serve as a hard negative only if the paper_id
@@ -155,7 +155,7 @@ if __name__ == '__main__':
     indirect_citations_results = []
     
     indirect_citations_imap_iterator = indirect_citations_pool.imap_unordered(
-        get_indirect_citations, list(citation_data_direct.keys()), chunksize=100)
+        get_indirect_citations, [(paper_id,) for paper_id in citation_data_direct.keys()], chunksize=100)
 
     for r in indirect_citations_imap_iterator:
         indirect_citations_results.append(r)
