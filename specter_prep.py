@@ -74,9 +74,8 @@ def get_indirect_citations(citation_data_direct, ids):
     print("Finding indirect citations for {} papers".format(len(ids)))
 
     pbar = tqdm.tqdm(
-        total=len(citation_data_direct[shard_num].keys()),
-        desc="#" + "{}".format(os.getpid()).zfill(6),
-        position=shard_num+1)
+        total=len(ids),
+        desc="#" + "{}".format(os.getpid()).zfill(6))
 
     for paper_id in ids:
         directly_cited_ids = citation_data_direct[paper_id].keys()
