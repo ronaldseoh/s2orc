@@ -69,7 +69,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     return output_citation_data
 
-def get_indirect_citations(ids):
+def get_indirect_citations(ids, tqdm_position):
 
     citation_data_indirect = {}
 
@@ -77,7 +77,8 @@ def get_indirect_citations(ids):
 
     pbar = tqdm.tqdm(
         total=len(ids),
-        desc="#" + "{}".format(os.getpid()).zfill(6))
+        desc="#" + "{}".format(os.getpid()).zfill(6),
+        position=tqdm_position+1)
 
     for paper_id in ids:
         directly_cited_ids = citation_data_direct[paper_id].keys()
@@ -157,7 +158,11 @@ if __name__ == '__main__':
 
     for i in range(shards_total_num):
         indirect_citations_results.append(
-            indirect_citations_pool.apply_async(get_indirect_citations, args=(metadata_shard_paper_ids[i])))
+            indirect_citations_pool.apply_async(
+                get_indirect_citations,
+                args=(metadata_shard_paper_ids[i], i)
+            )
+        )
 
     indirect_citations_pool.close()
     indirect_citations_pool.join()
