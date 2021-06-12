@@ -153,8 +153,12 @@ if __name__ == '__main__':
     # for indirect citations
     indirect_citations_pool = multiprocessing.Pool(processes=args.num_processes)
     indirect_citations_results = []
+    
+    indirect_citations_imap_iterator = indirect_citations_pool.imap_unordered(
+        get_indirect_citations, citation_data_direct.keys(),
+        chunksize=shards_total_num//args.num_processes)
 
-    for r in indirect_citations_pool.imap_unordered(get_indirect_citations, citation_data_direct.keys()):
+    for r in indirect_citations_imap_iterator:
         indirect_citations_results.append(r)
 
     # Combine citation_data_direct and citation_data_indirect into a single json file.
