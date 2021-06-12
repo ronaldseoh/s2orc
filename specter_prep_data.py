@@ -92,6 +92,17 @@ def get_citations_by_ids(ids):
             continue
 
     return citations
+    
+def get_all_paper_ids(data):
+    
+    all_paper_ids = set()
+    
+    for paper_id in data.keys():
+        all_paper_ids.add(paper_id)
+        
+        all_paper_ids = all_paper_ids.union(set(data[paper_id].keys()))
+    
+    return list(all_paper_ids)
 
 
 if __name__ == '__main__':
@@ -161,3 +172,12 @@ if __name__ == '__main__':
     json.dump(citation_data_all, output_file, indent=2)
 
     output_file.close()
+    
+    # Get all paper ids and dump them to a file as well.
+    all_paper_ids = get_all_paper_ids(citation_data_all)
+    
+    all_paper_ids_output_file = open(os.path.join(args.save_dir, "paper_ids.json"), 'w+')
+
+    json.dump(all_paper_ids, all_paper_ids_output_file, indent=2)
+
+    all_paper_ids_output_file.close()

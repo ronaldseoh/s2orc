@@ -52,7 +52,7 @@ if __name__ == '__main__':
     shards_total_num = 100
     
     # Load paper_ids.json
-    paper_ids_json = json.load(open(args.paper_ids_json, 'r'))
+    all_paper_ids = json.load(open(args.paper_ids_json, 'r'))
 
     # Parse `metadata` from s2orc to get all the paper titles
     metadata_read_pool = multiprocessing.Pool(processes=args.num_processes)
@@ -62,7 +62,7 @@ if __name__ == '__main__':
         metadata_read_results.append(
             metadata_read_pool.apply_async(
                 parse_metadata_shard,
-                args=(os.path.join(args.data_dir, 'metadata'), i, paper_ids_json)))
+                args=(os.path.join(args.data_dir, 'metadata'), i, all_paper_ids)))
 
     metadata_read_pool.close()
     metadata_read_pool.join()

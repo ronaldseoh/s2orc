@@ -9,17 +9,6 @@ import jsonlines
 import tqdm
 
 
-def get_all_paper_ids(data):
-    
-    all_paper_ids = set()
-    
-    for paper_id in data.keys():
-        all_paper_ids.add(paper_id)
-        
-        all_paper_ids = all_paper_ids.union(set(data[paper_id].keys()))
-    
-    return all_paper_ids
-
 def parse_pdf_parses_shard(data_dir, shard_num, titles, ids):
     
     output_metadata = {}
@@ -44,7 +33,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('data_json', help='path to data.json.')
+    parser.add_argument('paper_ids_json', help='path to paper_ids.json.')
     parser.add_argument('titles_json', help='path to titles.json.')
 
     parser.add_argument('data_dir', help='path to a directory containing `metadata` and `pdf_parses` subdirectories.')
@@ -57,10 +46,8 @@ if __name__ == '__main__':
     # Total number of shards to process
     shards_total_num = 100
     
-    # Read data.json and get all the paper ids
-    data = json.load(open(args.data_json, 'r'))
-    
-    all_paper_ids = get_all_paper_ids(data)
+    # Load paper_ids.json
+    all_paper_ids = json.load(open(args.paper_ids_json, 'r'))
     
     # Read titles.json and get all the titles
     titles = json.load(open(args.titles_json, 'r'))
