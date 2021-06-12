@@ -8,7 +8,7 @@ import json
 import jsonlines
 import tqdm
 
-
+global citation_data_direct
 citation_data_direct = {}
 
 def parse_pdf_parses_shard(data_dir, shard_num, save_dir):
@@ -155,8 +155,7 @@ if __name__ == '__main__':
     indirect_citations_results = []
     
     indirect_citations_imap_iterator = indirect_citations_pool.imap_unordered(
-        get_indirect_citations, citation_data_direct.keys(),
-        chunksize=shards_total_num//args.num_processes)
+        get_indirect_citations, list(citation_data_direct.keys()), chunksize=100)
 
     for r in indirect_citations_imap_iterator:
         indirect_citations_results.append(r)
