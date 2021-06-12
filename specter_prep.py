@@ -29,11 +29,11 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     reader = jsonlines.Reader(metadata_file)
 
-    tqdm_text = "#" + "{}".format(os.getpid()).zfill(6)
-
     print("Reading metadata shard {}".format(shard_num))
 
-    pbar = tqdm.tqdm(desc=tqdm_text, position=shard_num+1)
+    pbar = tqdm.tqdm(
+        desc="#" + "{}".format(shard_num).zfill(6),
+        position=shard_num+1)
 
     for paper in reader.iter(skip_invalid=True):
         # Only consider papers that
@@ -74,7 +74,9 @@ def get_indirect_citations(citation_data_direct, ids):
     print("Finding indirect citations for {} papers".format(len(ids)))
 
     pbar = tqdm.tqdm(
-        total=len(citation_data_direct[shard_num].keys()), desc=tqdm_text, position=shard_num+1)
+        total=len(citation_data_direct[shard_num].keys()),
+        desc="#" + "{}".format(os.getpid()).zfill(6),
+        position=shard_num+1)
 
     for paper_id in citation_data_direct[shard_num].keys():
         directly_cited_ids = citation_data[paper_id].keys()
