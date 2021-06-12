@@ -11,14 +11,6 @@ import tqdm
 global citation_data_direct
 citation_data_direct = {}
 
-def parse_pdf_parses_shard(data_dir, shard_num, save_dir):
-
-    pdf_parses_file = gzip.open(
-        os.path.join(data_dir, 'pdf_parses_{}.jsonl.gz'.format(shard_num)), 'rt')
-
-    reader = jsonlines.Reader(pdf_parses_file)
-
-    pass
 
 # Process metadata jsonl into `data.json` as required by SPECTER.
 # Need to get all the citation information.
@@ -73,13 +65,6 @@ def get_indirect_citations(ids):
 
     citation_data_indirect = {}
 
-    print("Finding indirect citations for {} papers".format(len(ids)))
-
-    pbar = tqdm.tqdm(
-        total=len(ids),
-        desc="#" + "{}".format(os.getpid()).zfill(6),
-        position=os.getpid()+1)
-
     for paper_id in ids:
         directly_cited_ids = citation_data_direct[paper_id].keys()
 
@@ -93,8 +78,6 @@ def get_indirect_citations(ids):
             # doesn't cite it in the first place.
             if indirect_id not in directly_cited_ids:
                 citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
-
-        pbar.update(1)
 
     return citation_data_indirect
 
@@ -157,7 +140,7 @@ if __name__ == '__main__':
     indirect_citations_imap_iterator = indirect_citations_pool.imap_unordered(
         get_indirect_citations, [(paper_id,) for paper_id in citation_data_direct.keys()], chunksize=100)
 
-    for r in indirect_citations_imap_iterator:
+    for r in tqdm.tqdm(indirect_citations_imap_iterator):
         indirect_citations_results.append(r)
 
     # Combine citation_data_direct and citation_data_indirect into a single json file.
@@ -175,6 +158,6 @@ if __name__ == '__main__':
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
     output_file = open(os.path.join(args.save_dir, "data.json"), 'w+')
 
-    json.dump(output_citation_data, output_file, indent=2)
+    json.dump(citation_data_all, output_file, indent=2)
 
     output_file.close()
