@@ -29,7 +29,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     reader = jsonlines.Reader(metadata_file)
 
-    tqdm_text = "#" + "{}".format(shard_num).zfill(3)
+    tqdm_text = "#" + "{}".format(os.getpid()).zfill(6)
 
     print("Reading metadata shard {}".format(shard_num))
 
@@ -67,16 +67,11 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     return output_citation_data
 
-def add_indirect_citations(citation_data_direct, shard_num):
+def get_indirect_citations(citation_data_direct, ids):
 
     citation_data_indirect = {}
 
-    other_shard_nums = list(range(len(citation_data_direct.keys())))
-    other_shard_nums.remove(shard_num)
-
-    tqdm_text = "#" + "{}".format(shard_num).zfill(3)
-    
-    print("Adding indirect citations, shard {}".format(shard_num))
+    print("Finding indirect citations for {} papers".format(len(ids)))
 
     pbar = tqdm.tqdm(
         total=len(citation_data_direct[shard_num].keys()), desc=tqdm_text, position=shard_num+1)
@@ -85,14 +80,13 @@ def add_indirect_citations(citation_data_direct, shard_num):
         directly_cited_ids = citation_data[paper_id].keys()
 
         # Search each shards
-        for n in other_shard_nums:
-            indirect_citations = get_citations_by_ids(citation_data_direct, n, directly_cited_ids)
+        indirect_citations = get_citations_by_ids(citation_data_direct, n, directly_cited_ids)
 
-            for indirect_id in indirect_citations:
-                # This indirect citation would serve as a hard negative only if the paper_id
-                # doesn't cite it in the first place.
-                if indirect_id not in directly_cited_ids:
-                    citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
+        for indirect_id in indirect_citations:
+            # This indirect citation would serve as a hard negative only if the paper_id
+            # doesn't cite it in the first place.
+            if indirect_id not in directly_cited_ids:
+                citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
 
         pbar.update(1)
 
@@ -143,8 +137,14 @@ if __name__ == '__main__':
     metadata_read_pool.join()
 
     print("Saving the parsed metadata to a manager dict...")
+    metadata_shard_paper_ids = []
+    
     for r in tqdm.tqdm(metadata_read_results):
-        citation_data_direct.update(r.get())
+        rs = r.get()
+        
+        metadata_shard_paper_ids.append(rs.keys())
+
+        citation_data_direct.update(rs)
 
     # Scan intermediate data_{}.json files (currently with direct citation only)
     # for indirect citations
@@ -153,7 +153,7 @@ if __name__ == '__main__':
 
     for i in range(shards_total_num):
         indirect_citations_results.append(
-            indirect_citations_pool.apply_async(add_indirect_citations, args=(citation_data_direct, i)))
+            indirect_citations_pool.apply_async(add_indirect_citations, args=(citation_data_direct, metadata_shard_paper_ids[i])))
 
     indirect_citations_pool.close()
     indirect_citations_pool.join()
