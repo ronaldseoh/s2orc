@@ -20,7 +20,7 @@ def get_all_paper_ids(data):
     
     return all_paper_ids
 
-def parse_pdf_parses_shard(data_dir, shard_num, ids):
+def parse_pdf_parses_shard(data_dir, shard_num, titles, ids):
     
     output_metadata = {}
 
@@ -29,7 +29,15 @@ def parse_pdf_parses_shard(data_dir, shard_num, ids):
 
     reader = jsonlines.Reader(pdf_parses_file)
 
-    pass
+    for paper in reader.iter(skip_invalid=True):
+        
+        if paper['paper_id'] in ids:
+            output_metadata[paper['paper_id']] = {
+                'title': titles[paper['paper_id']],
+                'abstract': paper['abstract'][0]['text'],
+            }
+            
+    return output_metadata
 
 
 if __name__ == '__main__':
@@ -37,6 +45,8 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('data_json', help='path to data.json.')
+    parser.add_argument('titles_json', help='path to titles.json.')
+
     parser.add_argument('data_dir', help='path to a directory containing `metadata` and `pdf_parses` subdirectories.')
     parser.add_argument('save_dir', help='path to a directory to save the processed files.')
 
@@ -46,24 +56,38 @@ if __name__ == '__main__':
 
     # Total number of shards to process
     shards_total_num = 100
+    
+    # Read data.json and get all the paper ids
+    data = json.load(open(args.data_json, 'r'))
+    
+    all_paper_ids = get_all_paper_ids(data)
+    
+    # Read titles.json and get all the titles
+    titles = json.load(open(args.titles_json, 'r'))
 
     # Parse `pdf_parses` from s2orc to create `metadata.json` for SPECTER
     pdf_parses_read_pool = multiprocessing.Pool(processes=args.num_processes)
     pdf_parses_read_results = []
 
     for i in range(shards_total_num):
-        metadata_read_results.append(
-            metadata_read_pool.apply_async(
-                parse_metadata_shard,
-                args=(os.path.join(args.data_dir, 'metadata'), i, args.fields_of_study)))
+        pdf_parses_read_results.append(
+            pdf_parses_read_pool.apply_async(
+                parse_pdf_parses_shard,
+                args=(os.path.join(args.data_dir, 'pdf_parses'), i, titles, all_paper_ids)))
 
-    metadata_read_pool.close()
-    metadata_read_pool.join()
+    pdf_parses_read_pool.close()
+    pdf_parses_read_pool.join()
+    
+    metadata = {}
+    
+    for r in tqdm.tqdm(pdf_parses_read_results):
 
-    # Write citation_data_all to a file.
+        metadata.update(r.get())
+
+    # Write metadata to a file.
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
-    output_file = open(os.path.join(args.save_dir, "data.json"), 'w+')
+    output_file = open(os.path.join(args.save_dir, "metadata.json"), 'w+')
 
-    json.dump(output_citation_data, output_file, indent=2)
+    json.dump(metadata, output_file, indent=2)
 
     output_file.close()
