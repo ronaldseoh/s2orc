@@ -146,13 +146,13 @@ if __name__ == '__main__':
     # Combine citation_data_direct and citation_data_indirect into a single json file.
     print("Merging direct and indirect citations...")
 
-    citation_data_all = {}
+    citation_data_all = citation_data_direct
 
     for r in indirect_citations_results:
         indirect = r.get()
 
         for paper_id in indirect.keys():
-            citation_data_all[paper_id] = {**citation_data_direct[paper_id], **indirect[paper_id]}
+            citation_data_all[paper_id].update(indirect[paper_id])
 
     # Write citation_data_all to a file.
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
