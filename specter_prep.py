@@ -78,11 +78,11 @@ def get_indirect_citations(citation_data_direct, ids):
         desc="#" + "{}".format(os.getpid()).zfill(6),
         position=shard_num+1)
 
-    for paper_id in citation_data_direct[shard_num].keys():
-        directly_cited_ids = citation_data[paper_id].keys()
+    for paper_id in ids:
+        directly_cited_ids = citation_data_direct[paper_id].keys()
 
         # Search each shards
-        indirect_citations = get_citations_by_ids(citation_data_direct, n, directly_cited_ids)
+        indirect_citations = get_citations_by_ids(citation_data_direct, directly_cited_ids)
 
         for indirect_id in indirect_citations:
             # This indirect citation would serve as a hard negative only if the paper_id
@@ -94,14 +94,12 @@ def get_indirect_citations(citation_data_direct, ids):
 
     return citation_data_indirect
 
-def get_citations_by_ids(citation_data_direct, shard_num, ids):
+def get_citations_by_ids(citation_data_direct, ids):
 
     citations = set()
 
-    matching_ids = set(ids).intersection(set(citation_data_direct[shard_num].keys()))
-
-    for paper_id in matching_ids:
-        citations.union(set(citation_data_direct[shard_num][paper_id].keys()))
+    for paper_id in ids:
+        citations.union(set(citation_data_direct[paper_id].keys()))
 
     return citations
 
