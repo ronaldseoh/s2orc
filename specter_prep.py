@@ -75,6 +75,8 @@ def add_indirect_citations(citation_data_direct, shard_num):
     other_shard_nums.remove(shard_num)
 
     tqdm_text = "#" + "{}".format(shard_num).zfill(3)
+    
+    print("Adding indirect citations, shard {}".format(shard_num))
 
     pbar = tqdm.tqdm(
         total=len(citation_data_direct[shard_num].keys()), desc=tqdm_text, position=shard_num+1)
