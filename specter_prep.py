@@ -155,13 +155,14 @@ if __name__ == '__main__':
 
     for i in range(shards_total_num):
         indirect_citations_results.append(
-            indirect_citations_pool.apply_async(add_indirect_citations, args=(citation_data_direct, metadata_shard_paper_ids[i])))
+            indirect_citations_pool.apply_async(get_indirect_citations, args=(citation_data_direct, metadata_shard_paper_ids[i])))
 
     indirect_citations_pool.close()
     indirect_citations_pool.join()
 
     # Combine citation_data_direct and citation_data_indirect into a single json file.
     print("Merging direct and indirect citations...")
+
     citation_data_all = {}
 
     for i in range(shards_total_num):
