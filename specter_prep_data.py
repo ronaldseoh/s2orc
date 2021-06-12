@@ -3,8 +3,8 @@ import pathlib
 import multiprocessing
 import argparse
 import gzip
-import json
 
+import ujson as json
 import jsonlines
 import tqdm
 
