@@ -140,11 +140,9 @@ if __name__ == '__main__':
     metadata_read_pool.close()
     metadata_read_pool.join()
 
-    for r in metadata_read_results:
-        rs = r.get()
-
-        for k in rs.keys():
-            citation_data_direct[k] = rs[k]
+    print("Saving the parsed metadata to a manager dict...")
+    for r in tqdm.tqdm(metadata_read_results):
+        citation_data_direct.update(r.get())
 
     # Scan intermediate data_{}.json files (currently with direct citation only)
     # for indirect citations
