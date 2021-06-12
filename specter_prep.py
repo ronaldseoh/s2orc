@@ -13,32 +13,32 @@ def parse_pdf_parses_shard(data_dir, shard_num, save_dir):
 
     pdf_parses_file = gzip.open(
         os.path.join(data_dir, 'pdf_parses_{}.jsonl.gz'.format(shard_num)), 'rt')
-    
+
     reader = jsonlines.Reader(pdf_parses_file)
-    
+
     pass
 
 # Process metadata jsonl into `data.json` as required by SPECTER.
 # Need to get all the citation information.
 def parse_metadata_shard(data_dir, shard_num, fields=None):
-    
+
     output_citation_data = {}
-    
+
     metadata_file = gzip.open(
         os.path.join(data_dir, 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
-    
+
     reader = jsonlines.Reader(metadata_file)
 
     tqdm_text = "#" + "{}".format(shard_num).zfill(3)
-    
+
     print("Reading metadata shard {}".format(shard_num))
-    
+
     pbar = tqdm.tqdm(desc=tqdm_text, position=shard_num+1)
-    
+
     for paper in reader.iter(skip_invalid=True):
-        # Only consider papers that 
+        # Only consider papers that
         # have outbound citations available, and
-        # have MAG field of study specified, and 
+        # have MAG field of study specified, and
         # PDF parse is available & abstract is included in PDF parse
         if not paper['has_outbound_citations'] \
            or not paper['mag_field_of_study'] \
@@ -46,42 +46,42 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
             continue
         elif not paper['has_pdf_parsed_abstract']:
             continue
-            
+
         # if args.fields_of_study is specified, only consider the papers from
         # those fields
         if fields and not set(fields).isdisjoint(set(paper['mag_field_of_study'])):
             continue
-            
+
         if paper['paper_id'] in output_citation_data.keys():
             print("Metadata shard {} Duplicate paper id {} found. Please check.".format(shard_num, paper['paper_id']))
-        
+
         # Iterate through paper ids of outbound citations
         citations = {}
-        
+
         for out_id in paper['outbound_citations']:
             citations[out_id] = {"count": 5} # 5 = direct citation
 
         output_citation_data[paper['paper_id']] = citations
-        
+
         pbar.update(1)
-        
+
     return output_citation_data
 
 def add_indirect_citations(citation_data_direct, shard_num):
-    
+
     citation_data_indirect = {}
-    
+
     other_shard_nums = list(range(len(citation_data_direct.keys())))
     other_shard_nums.remove(shard_num)
 
     tqdm_text = "#" + "{}".format(shard_num).zfill(3)
-    
+
     pbar = tqdm.tqdm(
         total=len(citation_data_direct[shard_num].keys()), desc=tqdm_text, position=shard_num+1)
 
     for paper_id in citation_data_direct[shard_num].keys():
         directly_cited_ids = citation_data[paper_id].keys()
-        
+
         # Search each shards
         for n in other_shard_nums:
             indirect_citations = get_citations_by_ids(citation_data_direct, n, directly_cited_ids)
@@ -91,20 +91,20 @@ def add_indirect_citations(citation_data_direct, shard_num):
                 # doesn't cite it in the first place.
                 if indirect_id not in directly_cited_ids:
                     citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
-                    
+
         pbar.update(1)
-        
+
     return citation_data_indirect
-                    
+
 def get_citations_by_ids(citation_data_direct, shard_num, ids):
-    
+
     citations = set()
-        
+
     matching_ids = set(ids).intersection(set(citation_data_direct[shard_num].keys()))
 
     for paper_id in matching_ids:
         citations.union(set(citation_data_direct[shard_num][paper_id].keys()))
-        
+
     return citations
 
 
@@ -117,24 +117,24 @@ if __name__ == '__main__':
 
     parser.add_argument('--fields_of_study', nargs='*', type=str)
     parser.add_argument('--num_processes', default=10, type=int, help='Number of processes to use.')
-    
+
     args = parser.parse_args()
-    
+
     # Total number of shards to process
     shards_total_num = 100
 
     manager = multiprocessing.Manager()
-    
+
     citation_data_direct = manager.dict()
-    
+
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
     metadata_read_pool = multiprocessing.Pool(processes=args.num_processes)
     metadata_read_results = []
-    
+
     for i in range(shards_total_num):
         metadata_read_results.append(
             metadata_read_pool.apply_async(
-                parse_metadata_shard, 
+                parse_metadata_shard,
                 args=(os.path.join(args.data_dir, 'metadata'), i, args.fields_of_study)))
 
     metadata_read_pool.close()
@@ -145,36 +145,36 @@ if __name__ == '__main__':
 
         for k in rs.keys():
             citation_data_direct[k] = rs[k]
-    
+
     # Scan intermediate data_{}.json files (currently with direct citation only)
     # for indirect citations
     indirect_citations_pool = multiprocessing.Pool(processes=args.num_processes)
     indirect_citations_results = []
-    
+
     for i in range(shards_total_num):
         indirect_citations_results.append(
             indirect_citations_pool.apply_async(add_indirect_citations, args=(citation_data_direct, i)))
 
     indirect_citations_pool.close()
     indirect_citations_pool.join()
-    
+
     # Combine citation_data_direct and citation_data_indirect into a single json file.
     print("Merging direct and indirect citations...")
     citation_data_all = {}
-    
+
     for i in range(shards_total_sum):
         direct = metadata_read_results[i].get()
         indirect = indirect_citations_results[i].get()
-        
+
         assert len(direct.keys()) == len(indirect.keys())
-        
+
         for paper_id in direct.keys():
             citation_data_all[paper_id] = {**direct[paper_id], **indirect[paper_id]}
-        
+
     # Write citation_data_all to a file.
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
     output_file = open(os.path.join(args.save_dir, "data.json"), 'w+')
-    
+
     json.dump(output_citation_data, output_file, indent=2)
-    
+
     output_file.close()
