@@ -106,11 +106,12 @@ def get_all_paper_ids(data):
     
     all_paper_ids = set()
     
-    for paper_id in data.keys():
+    for paper_id in tqdm.tqdm(data.keys()):
         all_paper_ids.add(paper_id)
         
-        all_paper_ids = all_paper_ids.union(set(data[paper_id].keys()))
-    
+        for cited_id in data[paper_id].keys():
+            all_paper_ids.add(cited_id)
+
     return list(all_paper_ids)
 
 
@@ -262,6 +263,6 @@ if __name__ == '__main__':
     print("Writing all paper ids to a file.")
     all_paper_ids_output_file = open(os.path.join(args.save_dir, "paper_ids.json"), 'w+')
 
-    json.dump(all_paper_ids, all_paper_ids_output_file, indent=2)
+    json.dump(all_paper_ids, all_paper_ids_output_file)
 
     all_paper_ids_output_file.close()
