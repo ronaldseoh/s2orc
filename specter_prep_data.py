@@ -94,7 +94,9 @@ def get_indirect_citations(ids):
         for indirect_id in indirect_citations:
             # This indirect citation would serve as a hard negative only if the paper_id
             # doesn't cite it in the first place.
-            if indirect_id not in directly_cited_ids:
+            # Also, check whether it is in the safe_paper_ids as decided
+            # by the metadata parse result (have all the necessary values populated)
+            if indirect_id not in directly_cited_ids and indirect_id in safe_paper_ids:
                 citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
 
     return citation_data_indirect
