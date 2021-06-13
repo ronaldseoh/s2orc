@@ -185,7 +185,7 @@ if __name__ == '__main__':
     metadata_read_pool.join()
 
     print("Combining all the metadata from all the shards...")
-    query_paper_ids_all_shard = []
+    query_paper_ids_by_fields_all_shard = []
     paper_titles = {}
     
     for r in tqdm.tqdm(metadata_read_results):
@@ -194,7 +194,7 @@ if __name__ == '__main__':
 
         citation_data_direct.update(citation_data_by_shard)
         
-        query_paper_ids_all_shard.append(paper_ids_by_field)
+        query_paper_ids_by_fields_all_shard.append(paper_ids_by_field)
         
         safe_paper_ids += safe_ids
         
@@ -255,7 +255,7 @@ if __name__ == '__main__':
     val_file = open(os.path.join(args.save_dir, "val.txt"), 'w+')
     test_file = open(os.path.join(args.save_dir, "test.txt"), 'w+')
 
-    for s in tqdm.tqdm(query_paper_ids_all_shard):
+    for s in tqdm.tqdm(query_paper_ids_by_fields_all_shard):
         for field in s.keys():
             field_paper_ids = s[field]
             
