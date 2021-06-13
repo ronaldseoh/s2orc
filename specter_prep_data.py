@@ -249,10 +249,6 @@ if __name__ == '__main__':
     train_file.close()
     val_file.close()
     test_file.close()
-
-    # Get all paper ids and dump them to a file as well.
-    print("Getting all paper ids ever appearing in data.json.")
-    all_paper_ids = get_all_paper_ids(citation_data_all)
     
     print("Writing all paper ids to a file.")
     all_paper_ids_output_file = open(os.path.join(args.save_dir, "paper_ids.json"), 'w+')
