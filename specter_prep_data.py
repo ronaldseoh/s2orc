@@ -11,7 +11,7 @@ import tqdm
 
 
 citation_data_direct = {}
-safe_paper_ids = []
+safe_paper_ids = {}
 
 
 # Process metadata jsonl into `data.json` as required by SPECTER.
@@ -21,7 +21,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
     output_citation_data = {}
     output_query_paper_ids = []
     output_query_paper_ids_by_field = {}
-    output_safe_paper_ids = []
+    output_safe_paper_ids = {}
     output_titles = {}
 
     metadata_file = gzip.open(
@@ -41,15 +41,17 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
         # PDF parse is available & abstract is included in PDF parse
         if not paper['mag_field_of_study'] \
            or not paper['has_pdf_parse']:
+            output_safe_paper_ids[paper['paper_id']] = False
             continue
         elif not paper['has_pdf_parsed_abstract']:
+            output_safe_paper_ids[paper['paper_id']] = False
             continue
 
         # Since SPECTER requires all papers in the graph to have titles and abstract,
         # Once the conditions listed above has been met,
         # record the paper id in safe_paper_ids
-        output_safe_paper_ids.append(paper['paper_id'])
-        
+        output_safe_paper_ids[paper['paper_id']] = True
+
         # Fetch titles
         output_titles[paper['paper_id']] = paper['title']
 
@@ -107,17 +109,8 @@ def get_indirect_citations(i):
             # doesn't cite it in the first place.
             # Also, check whether it is in the safe_paper_ids as decided
             # by the metadata parse result (have all the necessary values populated)
-            if indirect_id not in directly_cited_ids:
-                
-                indirect_id_safe = False
-                
-                for safe_id in safe_paper_ids:
-                    if safe_id == indirect_id:
-                        indirect_id_safe = True
-                        break
-                        
-                if indirect_id_safe:
-                    citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
+            if indirect_id not in directly_cited_ids and safe_paper_ids[indirect_id]:
+                citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
                     
         pbar.update(1)
 
@@ -218,7 +211,7 @@ if __name__ == '__main__':
         
         query_paper_ids_by_field_all_shard.append(paper_ids_by_field)
         
-        safe_paper_ids += safe_ids
+        safe_paper_ids.update(safe_ids)
         
         paper_titles.update(titles)
 
