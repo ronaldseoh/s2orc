@@ -115,7 +115,8 @@ def get_citations_by_ids(ids):
 
     for paper_id in ids:
         try:
-            citations = citations.union(set(citation_data_direct[paper_id].keys()))
+            for cited_id in citation_data_direct[paper_id].keys():
+                citations.add(cited_id)
         except:
             continue
 
