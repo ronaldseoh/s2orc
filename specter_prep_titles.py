@@ -26,9 +26,10 @@ def parse_metadata_shard(data_dir, shard_num, ids):
         position=shard_num+1)
 
     for paper in reader.iter(skip_invalid=True):
-
-        if paper['paper_id'] in ids:
-            output_title[paper['paper_id']] = paper['title']
+        for paper_id in ids:
+            if paper['paper_id'] == paper_id:
+                output_title[paper['paper_id']] = paper['title']
+                break
 
         pbar.update(1)
 
