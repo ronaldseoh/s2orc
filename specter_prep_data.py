@@ -39,7 +39,8 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
            or not paper['has_pdf_parse']:
             output_safe_paper_ids[paper['paper_id']] = False
             continue
-        elif not paper['has_pdf_parsed_abstract']:
+
+        if not paper['has_pdf_parsed_abstract']:
             output_safe_paper_ids[paper['paper_id']] = False
             continue
 
@@ -55,7 +56,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
         # those fields
         if fields and not set(fields).isdisjoint(set(paper['mag_field_of_study'])):
             continue
-        
+
         # Query papers should have outbound citations
         if not paper['has_outbound_citations']:
             continue
@@ -65,12 +66,12 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
         else:
             # Record paper_id
             output_query_paper_ids.append(paper['paper_id'])
-            
+
             # Record paper_id based on mag_field_of_study
             for paper_field in paper['mag_field_of_study']:
                 if paper_field not in output_query_paper_ids_by_field.keys():
                     output_query_paper_ids_by_field[paper_field] = []
-                    
+
                 output_query_paper_ids_by_field[paper_field].append(paper['paper_id'])
 
             # Iterate through paper ids of outbound citations
@@ -85,14 +86,14 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
 
-def get_indirect_citations(i):
+def get_indirect_citations(shard_num):
 
     citation_data_indirect = {}
-    
-    pbar = tqdm.tqdm(
-        desc="#" + "{}".format(i).zfill(3), position=i+1)
 
-    for paper_id in query_paper_ids_all_shard[i]:
+    pbar = tqdm.tqdm(
+        desc="#" + "{}".format(shard_num).zfill(3), position=shard_num+1)
+
+    for paper_id in query_paper_ids_all_shard[shard_num]:
         directly_cited_ids = citation_data_direct[paper_id].keys()
 
         citation_data_indirect[paper_id] = {}
@@ -107,7 +108,7 @@ def get_indirect_citations(i):
             # by the metadata parse result (have all the necessary values populated)
             if indirect_id not in directly_cited_ids and safe_paper_ids[indirect_id]:
                 citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
-                    
+
         pbar.update(1)
 
     return citation_data_indirect
@@ -124,14 +125,14 @@ def get_citations_by_ids(ids):
             continue
 
     return citations
-    
+
 def get_all_paper_ids(data):
-    
+
     all_paper_ids = set()
-    
+
     for paper_id in tqdm.tqdm(data.keys()):
         all_paper_ids.add(paper_id)
-        
+
         for cited_id in data[paper_id].keys():
             all_paper_ids.add(cited_id)
 
@@ -147,19 +148,19 @@ if __name__ == '__main__':
 
     parser.add_argument('--fields_of_study', nargs='*', type=str)
     parser.add_argument('--num_processes', default=10, type=int, help='Number of processes to use.')
-    
+
     parser.add_argument('--seed', default=321, type=int, help='Random seed.')
-    
+
     parser.add_argument('--shards', nargs='*', type=int, help='Specific shards to be used.')
-    
+
     parser.add_argument(
         '--val_proportion',
         default=0.10, type=float, help='proportion of the generated dataset to be reserved for validation.')
-        
+
     parser.add_argument(
         '--test_proportion',
         default=0.10, type=float, help='proportion of the generated dataset to be reserved for test.')
-        
+
     parser.add_argument(
         '--train_proportion',
         type=float, help='proportion of the generated dataset to be reserved for training.')
@@ -172,7 +173,7 @@ if __name__ == '__main__':
 
     # Total number of shards to process
     shards_total_num = 100
-    
+
     # Check query/validation shard
     if args.shards:
         for n in args.shards:
@@ -198,19 +199,19 @@ if __name__ == '__main__':
     query_paper_ids_all_shard = []
     query_paper_ids_by_field_all_shard = []
     paper_titles = {}
-    
+
     for r in tqdm.tqdm(metadata_read_results):
 
         citation_data_by_shard, paper_ids, paper_ids_by_field, safe_ids, titles = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
-        
+
         query_paper_ids_all_shard.append(paper_ids)
-        
+
         query_paper_ids_by_field_all_shard.append(paper_ids_by_field)
-        
+
         safe_paper_ids.update(safe_ids)
-        
+
         paper_titles.update(titles)
 
     # Add indirect citations (citations by each direct citation)
@@ -222,14 +223,14 @@ if __name__ == '__main__':
         indirect_citations_shards_list = args.shards
     else:
         indirect_citations_shards_list = list(range(shards_total_num))
-    
+
     for i in indirect_citations_shards_list:
         indirect_citations_results.append(
             indirect_citations_pool.apply_async(
                 get_indirect_citations, args=(i,)
             )
         )
-        
+
     indirect_citations_pool.close()
     indirect_citations_pool.join()
 
@@ -260,10 +261,10 @@ if __name__ == '__main__':
     json.dump(citation_data_all, output_file, indent=2)
 
     output_file.close()
-    
+
     # Train-validation-test split
     print("Creating train-validation-test splits.")
-    
+
     train_file = open(os.path.join(args.save_dir, "train.txt"), 'w+')
     val_file = open(os.path.join(args.save_dir, "val.txt"), 'w+')
     test_file = open(os.path.join(args.save_dir, "test.txt"), 'w+')
@@ -271,26 +272,26 @@ if __name__ == '__main__':
     for s in tqdm.tqdm(query_paper_ids_by_field_all_shard):
         for field in s.keys():
             field_paper_ids = s[field]
-            
+
             random.shuffle(field_paper_ids)
-            
+
             val_size = int(len(field_paper_ids) * args.val_proportion)
             test_size = int(len(field_paper_ids) * args.test_proportion)
-            
+
             if args.train_proportion:
                 train_size = int(len(field_paper_ids) * args.train_proportion)
             else:
                 train_size = len(field_paper_ids) - val_size - test_size
-            
+
             for paper_id in field_paper_ids[0:train_size]:
                 train_file.write(paper_id + '\n')
-                
+
             for paper_id in field_paper_ids[train_size:train_size+val_size]:
                 val_file.write(paper_id + '\n')
-                
+
             for paper_id in field_paper_ids[train_size+val_size:train_size+val_size+test_size]:
                 test_file.write(paper_id + '\n')
-                
+
     train_file.close()
     val_file.close()
     test_file.close()
@@ -298,14 +299,14 @@ if __name__ == '__main__':
     # Get all paper ids and dump them to a file as well.
     print("Getting all paper ids ever appearing in data.json.")
     all_paper_ids = get_all_paper_ids(citation_data_all)
-    
+
     print("Writing all paper ids to a file.")
     all_paper_ids_output_file = open(os.path.join(args.save_dir, "paper_ids.json"), 'w+')
 
     json.dump(all_paper_ids, all_paper_ids_output_file)
 
     all_paper_ids_output_file.close()
-    
+
     print("Writing all paper titles to a file.")
     all_titles_output_file = open(os.path.join(args.save_dir, "titles.json"), 'w+')
 
