@@ -19,6 +19,7 @@ safe_paper_ids = []
 def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     output_citation_data = {}
+    output_query_paper_ids = []
     output_query_paper_ids_by_field = {}
     output_safe_paper_ids = []
     output_titles = {}
@@ -64,6 +65,9 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
         if paper['paper_id'] in output_citation_data.keys():
             print("Metadata shard {} Duplicate paper id {} found. Please check.".format(shard_num, paper['paper_id']))
         else:
+            # Record paper_id
+            output_query_paper_ids.append(paper['paper_id'])
+            
             # Record paper_id based on mag_field_of_study
             for paper_field in paper['mag_field_of_study']:
                 if paper_field not in output_query_paper_ids_by_field.keys():
@@ -81,7 +85,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
         pbar.update(1)
 
-    return output_citation_data, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
+    return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
 
 def get_indirect_citations(ids):
 
@@ -185,14 +189,17 @@ if __name__ == '__main__':
     metadata_read_pool.join()
 
     print("Combining all the metadata from all the shards...")
+    query_paper_ids_all_shard = []
     query_paper_ids_by_fields_all_shard = []
     paper_titles = {}
     
     for r in tqdm.tqdm(metadata_read_results):
 
-        citation_data_by_shard, paper_ids_by_field, safe_ids, titles = r.get()
+        citation_data_by_shard, paper_ids, paper_ids_by_field, safe_ids, titles = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
+        
+        query_paper_ids_all_shard.append(paper_ids)
         
         query_paper_ids_by_fields_all_shard.append(paper_ids_by_field)
         
@@ -213,7 +220,7 @@ if __name__ == '__main__':
     for i in indirect_citations_shards_list:
         indirect_citations_results.append(
             indirect_citations_pool.apply_async(
-                get_indirect_citations, args=(list(metadata_read_results[i].get()[0].keys()),)
+                get_indirect_citations, args=(query_paper_ids_all_shard[i],)
             )
         )
         
