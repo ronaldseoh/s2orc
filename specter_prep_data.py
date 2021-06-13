@@ -198,12 +198,12 @@ if __name__ == '__main__':
     print("Merging direct and indirect citations...")
 
     if args.shards:
-        for i in args.shards:
+        for i in tqdm.tqdm(args.shards):
             citation_data_all.update(metadata_read_results[i].get()[0])
     else:
         citation_data_all = citation_data_direct
 
-    for r in indirect_citations_results:
+    for r in tqdm.tqdm(indirect_citations_results):
         indirect = r.get()
 
         for paper_id in indirect.keys():
