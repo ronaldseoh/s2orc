@@ -9,6 +9,9 @@ import jsonlines
 import tqdm
 
 
+global all_paper_ids
+all_paper_ids = {}
+
 # Process metadata jsonl and get all the paper titles.
 def parse_metadata_shard(data_dir, shard_num, ids):
 
