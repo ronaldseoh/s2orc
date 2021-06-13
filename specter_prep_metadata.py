@@ -10,18 +10,17 @@ import tqdm
 
 
 def parse_pdf_parses_shard(data_dir, shard_num, titles, ids):
-    
+
     output_metadata = {}
 
     pdf_parses_file = gzip.open(
         os.path.join(data_dir, 'pdf_parses_{}.jsonl.gz'.format(shard_num)), 'rt')
 
     reader = jsonlines.Reader(pdf_parses_file)
-    
+
     pbar = tqdm.tqdm(
         desc="#" + "{}".format(shard_num).zfill(6),
         position=shard_num+1)
-
 
     for paper_id in ids:
         for paper in reader.iter(skip_invalid=True):
@@ -30,11 +29,11 @@ def parse_pdf_parses_shard(data_dir, shard_num, titles, ids):
                     'title': titles[paper['paper_id']],
                     'abstract': paper['abstract'][0]['text'],
                 }
-                
+
             break
-            
+
         pbar.update(1)
-            
+
     return output_metadata
 
 
@@ -54,11 +53,11 @@ if __name__ == '__main__':
 
     # Total number of shards to process
     shards_total_num = 100
-    
+
     # Load paper_ids.json
     print("Loading paper_ids.json...")
     all_paper_ids = json.load(open(args.paper_ids_json, 'r'))
-    
+
     # Read titles.json and get all the titles
     print("Loading titles.json...")
     titles = json.load(open(args.titles_json, 'r'))
@@ -76,10 +75,10 @@ if __name__ == '__main__':
 
     pdf_parses_read_pool.close()
     pdf_parses_read_pool.join()
-    
+
     print("Combining all title/abstract from the shards...")
     metadata = {}
-    
+
     for r in tqdm.tqdm(pdf_parses_read_results):
 
         metadata.update(r.get())
