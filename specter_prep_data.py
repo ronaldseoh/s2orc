@@ -142,14 +142,10 @@ if __name__ == '__main__':
     if args.query_shard:
         if not (args.query_shard >= 0 and args.query_shard < shard_total_num):
             raise Exception("Invalid value for args.query_shard: {}".format(args.query_shard))
-        else:
-            query_shard = args.query_shard
             
     if args.validation_shard:
         if not (args.validation_shard >= 0 and args.validation_shard < shard_total_num):
             raise Exception("Invalid value for args.validation_shard: {}".format(args.validation_shard))
-        else:
-            validation_shard = args.validation_shard
 
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
     metadata_read_pool = multiprocessing.Pool(processes=args.num_processes)
