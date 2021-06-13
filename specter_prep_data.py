@@ -184,10 +184,8 @@ if __name__ == '__main__':
     metadata_read_pool.close()
     metadata_read_pool.join()
 
-    print("Saving the parsed metadata to a single dict...")
-    
+    print("Combining all the metadata from all the shards...")
     query_paper_ids_all_shard = []
-    
     paper_titles = {}
     
     for r in tqdm.tqdm(metadata_read_results):
@@ -202,9 +200,8 @@ if __name__ == '__main__':
         
         paper_titles.update(titles)
 
-    print("Adding indirect citations...")
-
     # Add indirect citations (citations by each direct citation)
+    print("Adding indirect citations...")
     indirect_citations_pool = multiprocessing.Pool(processes=args.num_processes)
     indirect_citations_results = []
 
