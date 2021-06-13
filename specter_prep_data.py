@@ -33,9 +33,6 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
         position=shard_num+1)
 
     for paper in reader.iter(skip_invalid=True):
-        # Save paper titles
-        output_paper_titles[paper['paper_id']] = paper['title']
-        
         # Only consider papers that
         # have outbound citations available, and
         # have MAG field of study specified, and
@@ -46,6 +43,9 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
             continue
         elif not paper['has_pdf_parsed_abstract']:
             continue
+            
+        # Save paper titles
+        output_paper_titles[paper['paper_id']] = paper['title']
 
         # if args.fields_of_study is specified, only consider the papers from
         # those fields
