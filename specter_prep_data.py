@@ -91,7 +91,7 @@ def get_indirect_citations(i):
 
     citation_data_indirect = {}
 
-    for paper_id in query_paper_ids_all_shard[i]:
+    for paper_id in tqdm.tqdm(query_paper_ids_all_shard[i]):
         directly_cited_ids = citation_data_direct[paper_id].keys()
 
         citation_data_indirect[paper_id] = {}
@@ -104,8 +104,17 @@ def get_indirect_citations(i):
             # doesn't cite it in the first place.
             # Also, check whether it is in the safe_paper_ids as decided
             # by the metadata parse result (have all the necessary values populated)
-            if indirect_id not in directly_cited_ids and indirect_id in safe_paper_ids:
-                citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
+            if indirect_id not in directly_cited_ids:
+                
+                indirect_id_safe = False
+                
+                for safe_id in safe_paper_ids:
+                    if safe_id == indirect_id:
+                        indirect_id_safe = True
+                        break
+                        
+                if indirect_id_safe:
+                    citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
 
     return citation_data_indirect
 
