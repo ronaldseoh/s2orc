@@ -166,11 +166,15 @@ if __name__ == '__main__':
 
     print("Saving the parsed metadata to a single dict...")
     
+    paper_ids_all_shard = []
+    
     for r in tqdm.tqdm(metadata_read_results):
 
         citation_data_by_shard, paper_ids_by_field = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
+        
+        paper_ids_all_shard.append(paper_ids_by_field)
 
     print("Adding indirect citations...")
 
