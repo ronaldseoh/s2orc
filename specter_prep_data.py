@@ -9,9 +9,8 @@ import ujson as json
 import jsonlines
 import tqdm
 
-global citation_data_direct
-citation_data_direct = {}
 
+citation_data_direct = {}
 safe_paper_ids = []
 
 
@@ -20,9 +19,8 @@ safe_paper_ids = []
 def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     output_citation_data = {}
-    output_paper_ids_by_field = {}
-
-    global safe_paper_ids
+    output_query_paper_ids_by_field = {}
+    output_safe_paper_ids = []
 
     metadata_file = gzip.open(
         os.path.join(data_dir, 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
@@ -44,11 +42,11 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
             continue
         elif not paper['has_pdf_parsed_abstract']:
             continue
-            
+
         # Since SPECTER requires all papers in the graph to have titles and abstract,
         # Once the conditions listed above has been met,
         # record the paper id in safe_paper_ids
-        safe_paper_ids.append(paper['paper_id'])
+        output_safe_paper_ids.append(paper['paper_id'])
 
         # if args.fields_of_study is specified, only consider the papers from
         # those fields
@@ -64,10 +62,10 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
         else:
             # Record paper_id based on mag_field_of_study
             for paper_field in paper['mag_field_of_study']:
-                if paper_field not in output_paper_ids_by_field.keys():
-                    output_paper_ids_by_field[paper_field] = []
+                if paper_field not in output_query_paper_ids_by_field.keys():
+                    output_query_paper_ids_by_field[paper_field] = []
                     
-                output_paper_ids_by_field[paper_field].append(paper['paper_id'])
+                output_query_paper_ids_by_field[paper_field].append(paper['paper_id'])
 
             # Iterate through paper ids of outbound citations
             citations = {}
@@ -79,7 +77,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
         pbar.update(1)
 
-    return output_citation_data, output_paper_ids_by_field
+    return output_citation_data, output_query_paper_ids_by_field
 
 def get_indirect_citations(ids):
 
@@ -182,7 +180,7 @@ if __name__ == '__main__':
 
     print("Saving the parsed metadata to a single dict...")
     
-    paper_ids_all_shard = []
+    query_paper_ids_all_shard = []
     
     for r in tqdm.tqdm(metadata_read_results):
 
@@ -190,7 +188,7 @@ if __name__ == '__main__':
 
         citation_data_direct.update(citation_data_by_shard)
         
-        paper_ids_all_shard.append(paper_ids_by_field)
+        query_paper_ids_all_shard.append(paper_ids_by_field)
 
     print("Adding indirect citations...")
 
@@ -248,7 +246,7 @@ if __name__ == '__main__':
     val_file = open(os.path.join(args.save_dir, "val.txt"), 'w+')
     test_file = open(os.path.join(args.save_dir, "test.txt"), 'w+')
 
-    for s in tqdm.tqdm(paper_ids_all_shard):
+    for s in tqdm.tqdm(query_paper_ids_all_shard):
         for field in s.keys():
             field_paper_ids = s[field]
             
