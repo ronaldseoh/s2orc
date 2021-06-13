@@ -10,10 +10,6 @@ import jsonlines
 import tqdm
 
 
-citation_data_direct = {}
-safe_paper_ids = {}
-
-
 # Process metadata jsonl into `data.json` as required by SPECTER.
 # Need to get all the citation information.
 def parse_metadata_shard(data_dir, shard_num, fields=None):
@@ -197,6 +193,8 @@ if __name__ == '__main__':
     metadata_read_pool.join()
 
     print("Combining all the metadata from all the shards...")
+    citation_data_direct = {}
+    safe_paper_ids = {}
     query_paper_ids_all_shard = []
     query_paper_ids_by_field_all_shard = []
     paper_titles = {}
