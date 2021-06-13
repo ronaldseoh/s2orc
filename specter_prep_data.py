@@ -12,6 +12,8 @@ import tqdm
 global citation_data_direct
 citation_data_direct = {}
 
+safe_paper_ids = []
+
 
 # Process metadata jsonl into `data.json` as required by SPECTER.
 # Need to get all the citation information.
@@ -19,6 +21,8 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     output_citation_data = {}
     output_paper_ids_by_field = {}
+
+    global safe_paper_ids
 
     metadata_file = gzip.open(
         os.path.join(data_dir, 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
@@ -28,24 +32,31 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
     print("Reading metadata shard {}".format(shard_num))
 
     pbar = tqdm.tqdm(
-        desc="#" + "{}".format(shard_num).zfill(6),
+        desc="#" + "{}".format(shard_num).zfill(3),
         position=shard_num+1)
 
     for paper in reader.iter(skip_invalid=True):
         # Only consider papers that
-        # have outbound citations available, and
         # have MAG field of study specified, and
         # PDF parse is available & abstract is included in PDF parse
-        if not paper['has_outbound_citations'] \
-           or not paper['mag_field_of_study'] \
+        if not paper['mag_field_of_study'] \
            or not paper['has_pdf_parse']:
             continue
         elif not paper['has_pdf_parsed_abstract']:
             continue
+            
+        # Since SPECTER requires all papers in the graph to have titles and abstract,
+        # Once the conditions listed above has been met,
+        # record the paper id in safe_paper_ids
+        safe_paper_ids.append(paper['paper_id'])
 
         # if args.fields_of_study is specified, only consider the papers from
         # those fields
         if fields and not set(fields).isdisjoint(set(paper['mag_field_of_study'])):
+            continue
+        
+        # Query papers should have outbound citations
+        if not paper['has_outbound_citations']:
             continue
 
         if paper['paper_id'] in output_citation_data.keys():
