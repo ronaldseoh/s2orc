@@ -21,6 +21,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
     output_citation_data = {}
     output_query_paper_ids_by_field = {}
     output_safe_paper_ids = []
+    output_titles = {}
 
     metadata_file = gzip.open(
         os.path.join(data_dir, 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
@@ -47,6 +48,9 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
         # Once the conditions listed above has been met,
         # record the paper id in safe_paper_ids
         output_safe_paper_ids.append(paper['paper_id'])
+        
+        # Fetch titles
+        output_titles[paper['paper_id']] = paper['title']
 
         # if args.fields_of_study is specified, only consider the papers from
         # those fields
@@ -77,7 +81,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
         pbar.update(1)
 
-    return output_citation_data, output_query_paper_ids_by_field, output_safe_paper_ids
+    return output_citation_data, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
 
 def get_indirect_citations(ids):
 
@@ -184,15 +188,19 @@ if __name__ == '__main__':
     
     query_paper_ids_all_shard = []
     
+    paper_titles = {}
+    
     for r in tqdm.tqdm(metadata_read_results):
 
-        citation_data_by_shard, paper_ids_by_field, safe_ids = r.get()
+        citation_data_by_shard, paper_ids_by_field, safe_ids, titles = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
         
         query_paper_ids_all_shard.append(paper_ids_by_field)
         
         safe_paper_ids += safe_ids
+        
+        paper_titles.update(titles)
 
     print("Adding indirect citations...")
 
@@ -287,3 +295,10 @@ if __name__ == '__main__':
     json.dump(all_paper_ids, all_paper_ids_output_file)
 
     all_paper_ids_output_file.close()
+    
+    print("Writing all paper titles to a file.")
+    all_titles_output_file = open(os.path.join(args.save_dir, "titles.json"), 'w+')
+
+    json.dump(paper_titles, all_titles_output_file, indent=2)
+
+    all_titles_output_file.close()
