@@ -87,11 +87,11 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
 
-def get_indirect_citations(ids):
+def get_indirect_citations(i):
 
     citation_data_indirect = {}
 
-    for paper_id in ids:
+    for paper_id in query_paper_ids_all_shard[i]:
         directly_cited_ids = citation_data_direct[paper_id].keys()
 
         citation_data_indirect[paper_id] = {}
@@ -220,7 +220,7 @@ if __name__ == '__main__':
     for i in indirect_citations_shards_list:
         indirect_citations_results.append(
             indirect_citations_pool.apply_async(
-                get_indirect_citations, args=(query_paper_ids_all_shard[i],)
+                get_indirect_citations, args=(i,)
             )
         )
         
