@@ -90,8 +90,11 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 def get_indirect_citations(i):
 
     citation_data_indirect = {}
+    
+    pbar = tqdm.tqdm(
+        desc="#" + "{}".format(i).zfill(3), position=i+1)
 
-    for paper_id in tqdm.tqdm(query_paper_ids_all_shard[i]):
+    for paper_id in query_paper_ids_all_shard[i]:
         directly_cited_ids = citation_data_direct[paper_id].keys()
 
         citation_data_indirect[paper_id] = {}
@@ -115,6 +118,8 @@ def get_indirect_citations(i):
                         
                 if indirect_id_safe:
                     citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
+                    
+        pbar.update(1)
 
     return citation_data_indirect
 
