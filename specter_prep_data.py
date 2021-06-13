@@ -127,6 +127,14 @@ if __name__ == '__main__':
     parser.add_argument('--seed', default=321, type=int, help='Random seed.')
     
     parser.add_argument('--shards', nargs='*', type=int, help='Specific shards to be used.')
+    
+    parser.add_argument(
+        '--val_proportion',
+        default=0.10, type=float, help='proportion of the generated dataset to be reserved for validation.')
+        
+    parser.add_argument(
+        '--test_proportion',
+        default=0.10, type=float, help='proportion of the generated dataset to be reserved for test.')
 
     args = parser.parse_args()
 
@@ -205,11 +213,42 @@ if __name__ == '__main__':
     print("Writing data.json to a file.")
 
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
+
     output_file = open(os.path.join(args.save_dir, "data.json"), 'w+')
 
     json.dump(citation_data_all, output_file, indent=2)
 
     output_file.close()
+    
+    # Train-validation-test split
+    print("Creating train-validation-test splits.")
+    
+    train_file = open(os.path.join(args.save_dir, "train.txt"), 'w+')
+    val_file = open(os.path.join(args.save_dir, "val.txt"), 'w+')
+    test_file = open(os.path.join(args.save_dir, "test.txt"), 'w+')
+
+    for s in tqdm.tqdm(paper_ids_all_shard):
+        for field in s.keys():
+            field_paper_ids = s[field]
+            
+            random.shuffle(field_paper_ids)
+            
+            val_size = int(len(field_paper_ids) * args.val_proportion)
+            test_size = int(len(field_paper_ids) * args.test_proportion)
+            train_size = (len(field_paper_ids) - val_size - test_size
+            
+            for paper_id in field_paper_ids[0:train_size]:
+                train_file.write(paper_id + '\n')
+                
+            for paper_id in field_paper_ids[train_size:train_size+val_size]:
+                val_file.write(paper_id + '\n')
+                
+            for paper_id in field_paper_ids[train_size+val_size:train_size+val_size+test_size]:
+                test_file.write(paper_id + '\n')
+                
+    train_file.close()
+    val_file.close()
+    test_file.close()
 
     # Get all paper ids and dump them to a file as well.
     print("Getting all paper ids ever appearing in data.json.")
