@@ -235,7 +235,7 @@ if __name__ == '__main__':
             
             val_size = int(len(field_paper_ids) * args.val_proportion)
             test_size = int(len(field_paper_ids) * args.test_proportion)
-            train_size = (len(field_paper_ids) - val_size - test_size
+            train_size = len(field_paper_ids) - val_size - test_size
             
             for paper_id in field_paper_ids[0:train_size]:
                 train_file.write(paper_id + '\n')
