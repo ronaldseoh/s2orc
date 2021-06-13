@@ -128,15 +128,15 @@ def get_citations_by_ids(ids):
 
 def get_all_paper_ids(data):
 
-    all_paper_ids = set()
+    all_ids = set()
 
     for paper_id in tqdm.tqdm(data.keys()):
-        all_paper_ids.add(paper_id)
+        all_ids.add(paper_id)
 
         for cited_id in data[paper_id].keys():
-            all_paper_ids.add(cited_id)
+            all_ids.add(cited_id)
 
-    return list(all_paper_ids)
+    return list(all_ids)
 
 
 if __name__ == '__main__':
@@ -172,19 +172,19 @@ if __name__ == '__main__':
     random.seed(args.seed)
 
     # Total number of shards to process
-    shards_total_num = 100
+    SHARDS_TOTAL_NUM = 100
 
     # Check query/validation shard
     if args.shards:
         for n in args.shards:
-            if not (n >= 0 and n < shards_total_num):
+            if not (n >= 0 and n < SHARDS_TOTAL_NUM):
                 raise Exception("Invalid value for args.query_shard: {}".format(n))
 
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
     metadata_read_pool = multiprocessing.Pool(processes=args.num_processes)
     metadata_read_results = []
 
-    for i in range(shards_total_num):
+    for i in range(SHARDS_TOTAL_NUM):
         metadata_read_results.append(
             metadata_read_pool.apply_async(
                 parse_metadata_shard,
@@ -222,7 +222,7 @@ if __name__ == '__main__':
     if args.shards:
         indirect_citations_shards_list = args.shards
     else:
-        indirect_citations_shards_list = list(range(shards_total_num))
+        indirect_citations_shards_list = list(range(SHARDS_TOTAL_NUM))
 
     for i in indirect_citations_shards_list:
         indirect_citations_results.append(
