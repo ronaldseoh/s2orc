@@ -193,6 +193,9 @@ if __name__ == '__main__':
                 get_indirect_citations, args=(list(metadata_read_results[i].get()[0].keys()),)
             )
         )
+        
+    indirect_citations_pool.close()
+    indirect_citations_pool.join()
 
     # Combine citation_data_direct and citation_data_indirect into a single json file.
     print("Merging direct and indirect citations...")
