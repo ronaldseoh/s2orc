@@ -136,6 +136,10 @@ if __name__ == '__main__':
     parser.add_argument(
         '--test_proportion',
         default=0.10, type=float, help='proportion of the generated dataset to be reserved for test.')
+        
+    parser.add_argument(
+        '--train_proportion',
+        type=float, help='proportion of the generated dataset to be reserved for training.')
 
     args = parser.parse_args()
 
@@ -241,7 +245,11 @@ if __name__ == '__main__':
             
             val_size = int(len(field_paper_ids) * args.val_proportion)
             test_size = int(len(field_paper_ids) * args.test_proportion)
-            train_size = len(field_paper_ids) - val_size - test_size
+            
+            if args.train_proportion:
+                train_size = int(len(field_paper_ids) * args.train_proportion)
+            else:
+                train_size = len(field_paper_ids) - val_size - test_size
             
             for paper_id in field_paper_ids[0:train_size]:
                 train_file.write(paper_id + '\n')
