@@ -137,7 +137,7 @@ if __name__ == '__main__':
     # Check query/validation shard
     if args.shards:
         for n in args.shards:
-            if not (n >= 0 and n < shard_total_num):
+            if not (n >= 0 and n < shards_total_num):
                 raise Exception("Invalid value for args.query_shard: {}".format(n))
 
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
