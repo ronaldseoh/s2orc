@@ -19,7 +19,6 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     output_citation_data = {}
     output_paper_ids_by_field = {}
-    output_paper_titles = {}
 
     metadata_file = gzip.open(
         os.path.join(data_dir, 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
@@ -43,9 +42,6 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
             continue
         elif not paper['has_pdf_parsed_abstract']:
             continue
-            
-        # Save paper titles
-        output_paper_titles[paper['paper_id']] = paper['title']
 
         # if args.fields_of_study is specified, only consider the papers from
         # those fields
@@ -72,7 +68,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
         pbar.update(1)
 
-    return output_citation_data, output_paper_ids_by_field, output_paper_titles
+    return output_citation_data, output_paper_ids_by_field
 
 def get_indirect_citations(ids):
 
@@ -172,17 +168,14 @@ if __name__ == '__main__':
     print("Saving the parsed metadata to a single dict...")
     
     paper_ids_all_shard = []
-    paper_titles_all_shard = []
     
     for r in tqdm.tqdm(metadata_read_results):
 
-        citation_data_by_shard, paper_ids_by_field, paper_titles = r.get()
+        citation_data_by_shard, paper_ids_by_field = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
         
         paper_ids_all_shard.append(paper_ids_by_field)
-        
-        paper_titles_all_shard.append(paper_titles)
 
     print("Adding indirect citations...")
 
@@ -273,18 +266,3 @@ if __name__ == '__main__':
     json.dump(all_paper_ids, all_paper_ids_output_file)
 
     all_paper_ids_output_file.close()
-    
-    # Paper titles
-    print("Getting all paper titles.")
-    
-    all_paper_titles = {}
-    
-    for t in tqdm.tqdm(paper_titles_all_shard):
-        all_paper_titles.update(t)
-    
-    print("Writing all paper titles to a file.")
-    all_paper_titles_output_file = open(os.path.join(args.save_dir, "titles.json"), 'w+')
-
-    json.dump(all_paper_titles, all_paper_titles_output_file)
-
-    all_paper_titles_output_file.close()
