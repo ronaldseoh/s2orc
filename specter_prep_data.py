@@ -126,8 +126,7 @@ if __name__ == '__main__':
     
     parser.add_argument('--seed', default=321, type=int, help='Random seed.')
     
-    parser.add_argument('--query_shard', type=int, help='the shard to be used for extracting query papers.')
-    parser.add_argument('--validation_shard', type=int, help='the shard to be used for extracting validation papers.')
+    parser.add_argument('--shards', nargs='*', type=int, help='Specific shards to be used.')
 
     args = parser.parse_args()
 
@@ -139,13 +138,10 @@ if __name__ == '__main__':
     shards_total_num = 100
     
     # Check query/validation shard
-    if args.query_shard:
-        if not (args.query_shard >= 0 and args.query_shard < shard_total_num):
-            raise Exception("Invalid value for args.query_shard: {}".format(args.query_shard))
-            
-    if args.validation_shard:
-        if not (args.validation_shard >= 0 and args.validation_shard < shard_total_num):
-            raise Exception("Invalid value for args.validation_shard: {}".format(args.validation_shard))
+    if args.shards:
+        for n in args.shards:
+            if not (n >= 0 and n < shard_total_num):
+                raise Exception("Invalid value for args.query_shard: {}".format(n))
 
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
     metadata_read_pool = multiprocessing.Pool(processes=args.num_processes)
@@ -174,21 +170,30 @@ if __name__ == '__main__':
 
     print("Adding indirect citations...")
 
-    # Scan intermediate data_{}.json files (currently with direct citation only)
-    # for indirect citations
+    # Add indirect citations (citations by each direct citation)
     indirect_citations_pool = multiprocessing.Pool(processes=args.num_processes)
     indirect_citations_results = []
-    
-    indirect_citations_imap_iterator = indirect_citations_pool.imap_unordered(
-        get_indirect_citations, [(paper_id,) for paper_id in citation_data_direct.keys()], chunksize=1000)
 
-    for r in tqdm.tqdm(indirect_citations_imap_iterator):
-        indirect_citations_results.append(r)
+    if args.shards:
+        indirect_citations_shards_list = args.shards
+    else:
+        indirect_citations_shards_list = list(range(shards_total_num))
+    
+    for i in indirect_citations_shards_list:
+        indirect_citations_results.append(
+            indirect_citations_pool.apply_async(
+                get_indirect_citations, args=(metadata_read_results[i].get()[0].keys(),)
+            )
+        )
 
     # Combine citation_data_direct and citation_data_indirect into a single json file.
     print("Merging direct and indirect citations...")
 
-    citation_data_all = citation_data_direct
+    if args.shards:
+        for i in args.shards:
+            citation_data_all.update(metadata_read_results[i].get()[0])
+    else:
+        citation_data_all = citation_data_direct
 
     for r in indirect_citations_results:
         indirect = r.get()
