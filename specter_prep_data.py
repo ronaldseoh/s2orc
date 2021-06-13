@@ -190,7 +190,7 @@ if __name__ == '__main__':
     for i in indirect_citations_shards_list:
         indirect_citations_results.append(
             indirect_citations_pool.apply_async(
-                get_indirect_citations, args=(metadata_read_results[i].get()[0].keys(),)
+                get_indirect_citations, args=(list(metadata_read_results[i].get()[0].keys()),)
             )
         )
 
