@@ -77,7 +77,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
         pbar.update(1)
 
-    return output_citation_data, output_query_paper_ids_by_field
+    return output_citation_data, output_query_paper_ids_by_field, output_safe_paper_ids
 
 def get_indirect_citations(ids):
 
@@ -184,11 +184,13 @@ if __name__ == '__main__':
     
     for r in tqdm.tqdm(metadata_read_results):
 
-        citation_data_by_shard, paper_ids_by_field = r.get()
+        citation_data_by_shard, paper_ids_by_field, safe_ids = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
         
         query_paper_ids_all_shard.append(paper_ids_by_field)
+        
+        safe_paper_ids += safe_ids
 
     print("Adding indirect citations...")
 
