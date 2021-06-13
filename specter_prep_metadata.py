@@ -22,13 +22,16 @@ def parse_pdf_parses_shard(data_dir, shard_num, titles, ids):
         desc="#" + "{}".format(shard_num).zfill(6),
         position=shard_num+1)
 
-    for paper in reader.iter(skip_invalid=True):
-        
-        if paper['paper_id'] in ids:
-            output_metadata[paper['paper_id']] = {
-                'title': titles[paper['paper_id']],
-                'abstract': paper['abstract'][0]['text'],
-            }
+
+    for paper_id in ids:
+        for paper in reader.iter(skip_invalid=True):
+            if paper['paper_id'] == paper_id:
+                output_metadata[paper['paper_id']] = {
+                    'title': titles[paper['paper_id']],
+                    'abstract': paper['abstract'][0]['text'],
+                }
+                
+            break
             
         pbar.update(1)
             
