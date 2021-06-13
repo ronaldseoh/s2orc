@@ -18,6 +18,7 @@ citation_data_direct = {}
 def parse_metadata_shard(data_dir, shard_num, fields=None):
 
     output_citation_data = {}
+    output_paper_ids_by_field = {}
 
     metadata_file = gzip.open(
         os.path.join(data_dir, 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
@@ -49,18 +50,25 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
 
         if paper['paper_id'] in output_citation_data.keys():
             print("Metadata shard {} Duplicate paper id {} found. Please check.".format(shard_num, paper['paper_id']))
+        else:
+            # Record paper_id based on mag_field_of_study
+            for paper_field in paper['mag_field_of_study']:
+                if paper_field not in output_paper_ids_by_field.keys():
+                    output_paper_ids_by_field[paper_field] = []
+                    
+                output_paper_ids_by_field[paper_field].append(paper['paper_id'])
 
-        # Iterate through paper ids of outbound citations
-        citations = {}
+            # Iterate through paper ids of outbound citations
+            citations = {}
 
-        for out_id in paper['outbound_citations']:
-            citations[out_id] = {"count": 5} # 5 = direct citation
+            for out_id in paper['outbound_citations']:
+                citations[out_id] = {"count": 5} # 5 = direct citation
 
-        output_citation_data[paper['paper_id']] = citations
+            output_citation_data[paper['paper_id']] = citations
 
         pbar.update(1)
 
-    return output_citation_data
+    return output_citation_data, output_paper_ids_by_field
 
 def get_indirect_citations(ids):
 
@@ -156,13 +164,13 @@ if __name__ == '__main__':
     metadata_read_pool.close()
     metadata_read_pool.join()
 
-    print("Saving the parsed metadata to a manager dict...")
+    print("Saving the parsed metadata to a single dict...")
     
     for r in tqdm.tqdm(metadata_read_results):
 
-        rs = r.get()
+        citation_data_by_shard, paper_ids_by_field = r.get()
 
-        citation_data_direct.update(rs)
+        citation_data_direct.update(citation_data_by_shard)
 
     print("Adding indirect citations...")
 
