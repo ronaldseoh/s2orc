@@ -101,17 +101,6 @@ def get_citations_by_ids(ids):
             continue
 
     return citations
-    
-def get_all_paper_ids(data):
-    
-    all_paper_ids = set()
-    
-    for paper_id in data.keys():
-        all_paper_ids.add(paper_id)
-        
-        all_paper_ids = all_paper_ids.union(set(data[paper_id].keys()))
-    
-    return list(all_paper_ids)
 
 
 if __name__ == '__main__':
@@ -166,6 +155,8 @@ if __name__ == '__main__':
 
     print("Saving the parsed metadata to a single dict...")
     
+    all_paper_ids = set()
+
     paper_ids_all_shard = []
     
     for r in tqdm.tqdm(metadata_read_results):
@@ -173,6 +164,12 @@ if __name__ == '__main__':
         citation_data_by_shard, paper_ids_by_field = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
+        
+        # Save paper_id only to create paper_ids.json later on
+        for paper_id in citation_data_by_shard.keys():
+            all_paper_ids.add(paper_id)
+            
+            all_paper_ids = all_paper_ids.union(set(citation_data_by_shard[paper_id].keys()))
         
         paper_ids_all_shard.append(paper_ids_by_field)
 
@@ -208,6 +205,9 @@ if __name__ == '__main__':
 
         for paper_id in indirect.keys():
             citation_data_all[paper_id].update(indirect[paper_id])
+            
+            # Save paper_id only to create paper_ids.json later on                
+            all_paper_ids = all_paper_ids.union(set(indirect[paper_id].keys()))
 
     # Write citation_data_all to a file.
     print("Writing data.json to a file.")
@@ -257,6 +257,6 @@ if __name__ == '__main__':
     print("Writing all paper ids to a file.")
     all_paper_ids_output_file = open(os.path.join(args.save_dir, "paper_ids.json"), 'w+')
 
-    json.dump(all_paper_ids, all_paper_ids_output_file, indent=2)
+    json.dump(list(all_paper_ids), all_paper_ids_output_file, indent=2)
 
     all_paper_ids_output_file.close()
