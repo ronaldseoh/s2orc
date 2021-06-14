@@ -27,6 +27,7 @@ def parse_pdf_parses_shard(shard_num):
                     'abstract': paper['abstract'][0]['text'],
                 }
         except:
+            pbar.update(1)
             continue
 
         pbar.update(1)
