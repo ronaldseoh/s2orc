@@ -36,19 +36,19 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
         # PDF parse is available & abstract is included in PDF parse
         if not paper['mag_field_of_study'] \
            or not paper['has_pdf_parse']:
-            output_safe_paper_ids[paper['paper_id']] = False
+            output_safe_paper_ids[paper['paper_id']] = -1
             pbar.update(1)
             continue
 
         if not paper['has_pdf_parsed_abstract']:
-            output_safe_paper_ids[paper['paper_id']] = False
+            output_safe_paper_ids[paper['paper_id']] = -1
             pbar.update(1)
             continue
 
         # Since SPECTER requires all papers in the graph to have titles and abstract,
         # Once the conditions listed above has been met,
         # record the paper id in safe_paper_ids
-        output_safe_paper_ids[paper['paper_id']] = True
+        output_safe_paper_ids[paper['paper_id']] = shard_num
 
         # Fetch titles
         output_titles[paper['paper_id']] = paper['title']
@@ -111,7 +111,7 @@ def get_indirect_citations(shard_num):
             # doesn't cite it in the first place.
             # Also, check whether it is in the safe_paper_ids as decided
             # by the metadata parse result (have all the necessary values populated)
-            if indirect_id not in directly_cited_ids and safe_paper_ids[indirect_id]:
+            if indirect_id not in directly_cited_ids and safe_paper_ids[indirect_id] > -1:
                 citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
 
         pbar.update(1)
@@ -313,6 +313,13 @@ if __name__ == '__main__':
     json.dump(all_paper_ids, all_paper_ids_output_file)
 
     all_paper_ids_output_file.close()
+    
+    print("Writing safe paper ids to a file.")
+    safe_paper_ids_output_file = open(os.path.join(args.save_dir, "safe_paper_ids.json"), 'w+')
+
+    json.dump(safe_paper_ids, safe_paper_ids_output_file)
+
+    safe_paper_ids_output_file.close()
 
     print("Writing all paper titles to a file.")
     all_titles_output_file = open(os.path.join(args.save_dir, "titles.json"), 'w+')
