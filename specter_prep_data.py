@@ -130,14 +130,14 @@ def get_citations_by_ids(ids):
 
     return citations
 
-def get_all_paper_ids(data):
+def get_all_paper_ids(citation_data):
 
     all_ids = set()
 
-    for paper_id in tqdm.tqdm(data.keys()):
+    for paper_id in tqdm.tqdm(citation_data.keys()):
         all_ids.add(paper_id)
 
-        for cited_id in data[paper_id].keys():
+        for cited_id in citation_data[paper_id].keys():
             all_ids.add(cited_id)
 
     return list(all_ids)
