@@ -203,12 +203,17 @@ if __name__ == '__main__':
     query_paper_ids_all_shard = []
     query_paper_ids_by_field_all_shard = []
     paper_titles = {}
+    
+    citation_data_final = {}
 
-    for r in tqdm.tqdm(metadata_read_results):
+    for i, r in enumerate(tqdm.tqdm(metadata_read_results)):
 
         citation_data_by_shard, paper_ids, paper_ids_by_field, safe_ids, titles = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
+
+        if args.shards and i in args.shards:
+            citation_data_final.update(citation_data_by_shard)
 
         query_paper_ids_all_shard.append(paper_ids)
 
@@ -217,6 +222,9 @@ if __name__ == '__main__':
         safe_paper_ids.update(safe_ids)
 
         paper_titles.update(titles)
+        
+    if not args.shards:
+        citation_data_final = citation_data_direct # If args.shards are not specified, use all shards
 
     # Add indirect citations (citations by each direct citation)
     print("Adding indirect citations...")
@@ -241,28 +249,20 @@ if __name__ == '__main__':
     # Combine citation_data_direct and citation_data_indirect into a single json file.
     print("Merging direct and indirect citations...")
 
-    if args.shards:
-        citation_data_all = {}
-
-        for i in tqdm.tqdm(args.shards):
-            citation_data_all.update(metadata_read_results[i].get()[0])
-    else:
-        citation_data_all = citation_data_direct
-
     for r in tqdm.tqdm(indirect_citations_results):
         indirect = r.get()
 
         for paper_id in indirect.keys():
-            citation_data_all[paper_id].update(indirect[paper_id])
+            citation_data_final[paper_id].update(indirect[paper_id])
 
-    # Write citation_data_all to a file.
+    # Write citation_data_final to a file.
     print("Writing data.json to a file.")
 
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
 
     output_file = open(os.path.join(args.save_dir, "data.json"), 'w+')
 
-    json.dump(citation_data_all, output_file, indent=2)
+    json.dump(citation_data_final, output_file, indent=2)
 
     output_file.close()
 
@@ -307,7 +307,7 @@ if __name__ == '__main__':
 
     # Get all paper ids and dump them to a file as well.
     print("Getting all paper ids ever appearing in data.json.")
-    all_paper_ids = get_all_paper_ids(citation_data_all)
+    all_paper_ids = get_all_paper_ids(citation_data_final)
 
     print("Writing all paper ids to a file.")
     all_paper_ids_output_file = open(os.path.join(args.save_dir, "paper_ids.json"), 'w+')
