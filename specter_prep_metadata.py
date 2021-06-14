@@ -8,33 +8,30 @@ import ujson as json
 import tqdm
 
 
-def parse_pdf_parses_shard(paper_ids, tqdm_position):
+def parse_pdf_parses_shard(shard_num):
 
     output_metadata = {}
 
-    pbar = tqdm.tqdm(position=tqdm_position+1, total=len(paper_ids))
+    pbar = tqdm.tqdm(position=shard_num+1)
 
-    for p_id in paper_ids:
-        # Check which shard this paper belongs to by checking safe_paper_ids.
-        shard_num = safe_paper_ids[p_id]
+    pdf_parses_file = gzip.open(
+        os.path.join(args.data_dir, 'pdf_parses', 'pdf_parses_{}.jsonl.gz'.format(shard_num)), 'rt')
 
-        pdf_parses_file = gzip.open(
-            os.path.join(args.data_dir, 'pdf_parses', 'pdf_parses_{}.jsonl.gz'.format(shard_num)), 'rt')
+    for line in pdf_parses_file:
+        paper = json.loads(line)
 
-        for line in pdf_parses_file:
-            paper = json.loads(line)
-
-            if paper['paper_id'] == p_id:
+        try:
+            if all_paper_ids_by_shard[shard_num][paper['paper_id']]:
                 output_metadata[paper['paper_id']] = {
                     'title': titles[paper['paper_id']],
                     'abstract': paper['abstract'][0]['text'],
                 }
-
-                break
-
-        pdf_parses_file.close()
+        except:
+            continue
 
         pbar.update(1)
+
+    pdf_parses_file.close()
 
     return output_metadata
 
@@ -53,6 +50,9 @@ if __name__ == '__main__':
     parser.add_argument('--num_processes', default=10, type=int, help='Number of processes to use.')
 
     args = parser.parse_args()
+    
+    # Total number of shards to process
+    SHARDS_TOTAL_NUM = 100
 
     # Load paper_ids.json
     print("Loading paper_ids.json...")
@@ -65,23 +65,29 @@ if __name__ == '__main__':
     # Read titles.json and get all the titles
     print("Loading titles.json...")
     titles = json.load(open(args.titles_json, 'r'))
+    
+    print("Grouping all paper ids again by shard...")
+    all_paper_ids_by_shard = []
+    
+    for i in range(SHARDS_TOTAL_NUM):
+        all_paper_ids_by_shard[i] = {}
+    
+    for p_id in tqdm.tqdm(all_paper_ids):
+        # Check which shard this paper belongs to by checking safe_paper_ids.
+        shard_num = safe_paper_ids[p_id]
+        
+        if shard_num > -1:
+            all_paper_ids_by_shard[shard_num][p_id] = True
 
     # Parse `pdf_parses` from s2orc to create `metadata.json` for SPECTER
     print("Parsing pdf_parses...")
     pdf_parses_read_pool = multiprocessing.Pool(processes=args.num_processes)
     pdf_parses_read_results = []
 
-    paper_ids_slice_size = len(all_paper_ids) // args.num_processes
-
-    for i in range(args.num_processes + 1):
-
-        ids_slice_start = i * paper_ids_slice_size
-        ids_slice_end = (i+1) * paper_ids_slice_size
-
+    for i in range(SHARDS_TOTAL_NUM):
         pdf_parses_read_results.append(
             pdf_parses_read_pool.apply_async(
-                parse_pdf_parses_shard,
-                args=(all_paper_ids[ids_slice_start:ids_slice_end], i)
+                parse_pdf_parses_shard, args=(i,)
             )
         )
 
