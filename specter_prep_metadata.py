@@ -12,7 +12,7 @@ def parse_pdf_parses_shard(paper_ids, tqdm_position):
 
     output_metadata = {}
 
-    pbar = tqdm.tqdm(position=tqdm_position+1)
+    pbar = tqdm.tqdm(position=tqdm_position+1, total=len(paper_ids))
 
     for p_id in paper_ids:
         # Check which shard this paper belongs to by checking safe_paper_ids.
