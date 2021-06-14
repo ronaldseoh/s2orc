@@ -38,10 +38,12 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
         if not paper['mag_field_of_study'] \
            or not paper['has_pdf_parse']:
             output_safe_paper_ids[paper['paper_id']] = False
+            pbar.update(1)
             continue
 
         if not paper['has_pdf_parsed_abstract']:
             output_safe_paper_ids[paper['paper_id']] = False
+            pbar.update(1)
             continue
 
         # Since SPECTER requires all papers in the graph to have titles and abstract,
@@ -55,10 +57,12 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
         # if args.fields_of_study is specified, only consider the papers from
         # those fields
         if fields and not set(fields).isdisjoint(set(paper['mag_field_of_study'])):
+            pbar.update(1)
             continue
 
         # Query papers should have outbound citations
         if not paper['has_outbound_citations']:
+            pbar.update(1)
             continue
 
         if paper['paper_id'] in output_citation_data.keys():
