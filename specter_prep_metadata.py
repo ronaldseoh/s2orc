@@ -19,8 +19,7 @@ def parse_pdf_parses_shard(data_dir, shard_num):
     reader = jsonlines.Reader(pdf_parses_file)
 
     pbar = tqdm.tqdm(
-        desc="#" + "{}".format(shard_num).zfill(6),
-        position=shard_num+1)
+        desc="#" + "{}".format(shard_num).zfill(3), position=shard_num+1)
 
     for paper_id in all_paper_ids:
         for paper in reader.iter(skip_invalid=True):
@@ -52,7 +51,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     # Total number of shards to process
-    shards_total_num = 100
+    SHARDS_TOTAL_NUM = 100
 
     # Load paper_ids.json
     print("Loading paper_ids.json...")
@@ -67,7 +66,7 @@ if __name__ == '__main__':
     pdf_parses_read_pool = multiprocessing.Pool(processes=args.num_processes)
     pdf_parses_read_results = []
 
-    for i in range(shards_total_num):
+    for i in range(SHARDS_TOTAL_NUM):
         pdf_parses_read_results.append(
             pdf_parses_read_pool.apply_async(
                 parse_pdf_parses_shard,
