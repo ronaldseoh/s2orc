@@ -272,10 +272,15 @@ if __name__ == '__main__':
     train_file = open(os.path.join(args.save_dir, "train.txt"), 'w+')
     val_file = open(os.path.join(args.save_dir, "val.txt"), 'w+')
     test_file = open(os.path.join(args.save_dir, "test.txt"), 'w+')
+    
+    if args.shards:
+        query_paper_ids_by_field_shards_list = args.shards
+    else:
+        query_paper_ids_by_field_shards_list = list(range(SHARDS_TOTAL_NUM))
 
-    for s in tqdm.tqdm(query_paper_ids_by_field_all_shard):
-        for field in s.keys():
-            field_paper_ids = s[field]
+    for s in tqdm.tqdm(query_paper_ids_by_field_shards_list):
+        for field in query_paper_ids_by_field_all_shard[s].keys():
+            field_paper_ids = query_paper_ids_by_field_all_shard[s][field]
 
             random.shuffle(field_paper_ids)
 
