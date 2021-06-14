@@ -9,7 +9,7 @@ import jsonlines
 import tqdm
 
 
-def parse_pdf_parses_shard(data_dir, shard_num, titles, ids):
+def parse_pdf_parses_shard(data_dir, shard_num):
 
     output_metadata = {}
 
@@ -22,7 +22,7 @@ def parse_pdf_parses_shard(data_dir, shard_num, titles, ids):
         desc="#" + "{}".format(shard_num).zfill(6),
         position=shard_num+1)
 
-    for paper_id in ids:
+    for paper_id in all_paper_ids:
         for paper in reader.iter(skip_invalid=True):
             if paper['paper_id'] == paper_id:
                 output_metadata[paper['paper_id']] = {
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         pdf_parses_read_results.append(
             pdf_parses_read_pool.apply_async(
                 parse_pdf_parses_shard,
-                args=(os.path.join(args.data_dir, 'pdf_parses'), i, titles, all_paper_ids)))
+                args=(os.path.join(args.data_dir, 'pdf_parses'), i)))
 
     pdf_parses_read_pool.close()
     pdf_parses_read_pool.join()
