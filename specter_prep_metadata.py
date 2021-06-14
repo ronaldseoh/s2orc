@@ -8,11 +8,11 @@ import ujson as json
 import tqdm
 
 
-def parse_pdf_parses_shard(paper_ids):
+def parse_pdf_parses_shard(paper_ids, tqdm_position):
 
     output_metadata = {}
 
-    pbar = tqdm.tqdm(position=shard_num+1)
+    pbar = tqdm.tqdm(position=tqdm_position+1)
 
     for p_id in paper_ids:
         # Check which shard this paper belongs to by checking safe_paper_ids.
@@ -81,7 +81,7 @@ if __name__ == '__main__':
         pdf_parses_read_results.append(
             pdf_parses_read_pool.apply_async(
                 parse_pdf_parses_shard,
-                args=(all_paper_ids[ids_slice_start:ids_slice_end],)
+                args=(all_paper_ids[ids_slice_start:ids_slice_end], i)
             )
         )
 
