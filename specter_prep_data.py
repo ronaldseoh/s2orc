@@ -11,7 +11,7 @@ import tqdm
 
 # Process metadata jsonl into `data.json` as required by SPECTER.
 # Need to get all the citation information.
-def parse_metadata_shard(data_dir, shard_num, fields=None):
+def parse_metadata_shard(shard_num, fields=None):
 
     output_citation_data = {}
     output_query_paper_ids = []
@@ -20,7 +20,7 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
     output_titles = {}
 
     metadata_file = gzip.open(
-        os.path.join(data_dir, 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
+        os.path.join(args.data_dir, 'metadata', 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
 
     print("Reading metadata shard {}".format(shard_num))
 
@@ -192,8 +192,7 @@ if __name__ == '__main__':
     for i in range(SHARDS_TOTAL_NUM):
         metadata_read_results.append(
             metadata_read_pool.apply_async(
-                parse_metadata_shard,
-                args=(os.path.join(args.data_dir, 'metadata'), i, args.fields_of_study)))
+                parse_metadata_shard, args=(i, args.fields_of_study)))
 
     metadata_read_pool.close()
     metadata_read_pool.join()
