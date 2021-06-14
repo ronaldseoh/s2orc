@@ -6,7 +6,6 @@ import gzip
 import random
 
 import ujson as json
-import jsonlines
 import tqdm
 
 
@@ -23,15 +22,15 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
     metadata_file = gzip.open(
         os.path.join(data_dir, 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
 
-    reader = jsonlines.Reader(metadata_file)
-
     print("Reading metadata shard {}".format(shard_num))
 
     pbar = tqdm.tqdm(
         desc="#" + "{}".format(shard_num).zfill(3),
         position=shard_num+1)
 
-    for paper in reader.iter(skip_invalid=True):
+    for line in metadata_file:
+        paper = json.loads(line)
+        
         # Only consider papers that
         # have MAG field of study specified, and
         # PDF parse is available & abstract is included in PDF parse
@@ -87,6 +86,8 @@ def parse_metadata_shard(data_dir, shard_num, fields=None):
             output_citation_data[paper['paper_id']] = citations
 
         pbar.update(1)
+        
+    metadata_file.close()
 
     return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
 
