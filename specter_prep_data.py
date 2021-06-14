@@ -209,16 +209,16 @@ if __name__ == '__main__':
 
     for i, r in enumerate(tqdm.tqdm(metadata_read_results)):
 
-        citation_data_by_shard, paper_ids, paper_ids_by_field, safe_ids, titles = r.get()
+        citation_data_by_shard, query_paper_ids, query_paper_ids_by_field, safe_ids, titles = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
 
         if args.shards and i in args.shards:
             citation_data_final.update(citation_data_by_shard)
 
-        query_paper_ids_all_shard.append(paper_ids)
+        query_paper_ids_all_shard.append(query_paper_ids)
 
-        query_paper_ids_by_field_all_shard.append(paper_ids_by_field)
+        query_paper_ids_by_field_all_shard.append(query_paper_ids_by_field)
 
         safe_paper_ids.update(safe_ids)
 
@@ -239,10 +239,7 @@ if __name__ == '__main__':
 
     for i in indirect_citations_shards_list:
         indirect_citations_results.append(
-            indirect_citations_pool.apply_async(
-                get_indirect_citations, args=(i,)
-            )
-        )
+            indirect_citations_pool.apply_async(get_indirect_citations, args=(i,)))
 
     indirect_citations_pool.close()
     indirect_citations_pool.join()
