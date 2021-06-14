@@ -32,8 +32,8 @@ def parse_pdf_parses_shard(data_dir, shard_num):
                 break
 
         pbar.update(1)
-        
-    print("Shard {}: Found {} papers.".format(shard_num, len(output_metadata))
+
+    print("Shard {}: Found {} papers.".format(shard_num, len(output_metadata)))
 
     return output_metadata
 
