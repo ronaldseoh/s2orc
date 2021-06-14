@@ -117,6 +117,24 @@ def get_indirect_citations(shard_num):
         pbar.update(1)
 
     return citation_data_indirect
+    
+def sanitize_citation_data_direct():
+
+    # Remove all the "unsafe" papers from citation_data_direct,
+    # while avoiding iterating again through the metadata shards
+    global citation_data_direct
+
+    for paper_id in citation_data_direct.keys():
+        
+        cited_ids_to_remove = []
+
+        for cited_id in citation_data_direct[paper_id].keys():
+            if safe_paper_ids[cited_id] == -1:
+                cited_ids_to_remove.append(cited_id)
+                
+        for id_to_delete in cited_ids_to_remove:
+            del citation_data_direct[paper_id][id_to_delete]
+            print("Removed", id_to_delete, "from citation_data_direct.")
 
 def get_citations_by_ids(ids):
 
@@ -225,6 +243,10 @@ if __name__ == '__main__':
         
     if not args.shards:
         citation_data_final = citation_data_direct # If args.shards are not specified, use all shards
+        
+    # Remove invalid papers from citation_data_direct
+    print("Remove invalid papers from citation_data_indirect...")
+    sanitize_citation_data_direct()
 
     # Add indirect citations (citations by each direct citation)
     print("Adding indirect citations...")
