@@ -70,7 +70,7 @@ if __name__ == '__main__':
     all_paper_ids_by_shard = []
     
     for i in range(SHARDS_TOTAL_NUM):
-        all_paper_ids_by_shard[i] = {}
+        all_paper_ids_by_shard.append({})
     
     for p_id in tqdm.tqdm(all_paper_ids):
         # Check which shard this paper belongs to by checking safe_paper_ids.
