@@ -5,7 +5,6 @@ import argparse
 import gzip
 
 import ujson as json
-import jsonlines
 import tqdm
 
 
@@ -13,16 +12,16 @@ def parse_pdf_parses_shard(data_dir, shard_num):
 
     output_metadata = {}
 
-    pdf_parses_file = gzip.open(
-        os.path.join(data_dir, 'pdf_parses_{}.jsonl.gz'.format(shard_num)), 'rt')
-
-    reader = jsonlines.Reader(pdf_parses_file)
-
     pbar = tqdm.tqdm(
         desc="#" + "{}".format(shard_num).zfill(3), position=shard_num+1)
 
     for paper_id in all_paper_ids:
-        for paper in reader.iter(skip_invalid=True):
+        pdf_parses_file = gzip.open(
+            os.path.join(data_dir, 'pdf_parses_{}.jsonl.gz'.format(shard_num)), 'rt')
+
+        for line in pdf_parses_file:
+            paper = json.loads(line)
+
             if paper['paper_id'] == paper_id:
                 output_metadata[paper['paper_id']] = {
                     'title': titles[paper['paper_id']],
@@ -30,6 +29,8 @@ def parse_pdf_parses_shard(data_dir, shard_num):
                 }
 
                 break
+
+        pdf_parses_file.close()
 
         pbar.update(1)
 
