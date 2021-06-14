@@ -30,7 +30,7 @@ def parse_pdf_parses_shard(data_dir, shard_num, titles, ids):
                     'abstract': paper['abstract'][0]['text'],
                 }
 
-            break
+                break
 
         pbar.update(1)
 
