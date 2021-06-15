@@ -30,7 +30,7 @@ def parse_metadata_shard(shard_num, fields=None):
 
     for line in metadata_file:
         paper = json.loads(line)
-        
+
         # Only consider papers that
         # have MAG field of study specified, and
         # PDF parse is available & abstract is included in PDF parse
@@ -86,7 +86,7 @@ def parse_metadata_shard(shard_num, fields=None):
             output_citation_data[paper['paper_id']] = citations
 
         pbar.update(1)
-        
+
     metadata_file.close()
 
     return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
@@ -98,7 +98,7 @@ def get_indirect_citations(shard_num):
     pbar = tqdm.tqdm(
         desc="#" + "{}".format(shard_num).zfill(3), position=shard_num+1)
 
-    for paper_id in query_paper_ids_all_shard[shard_num]:
+    for paper_id in query_paper_ids_all_shard_sanitized[shard_num]:
         directly_cited_ids = citation_data_direct[paper_id].keys()
 
         citation_data_indirect[paper_id] = {}
@@ -128,28 +128,48 @@ def sanitize_citation_data_direct(shard_num):
     output_query_paper_ids = query_paper_ids_all_shard[shard_num]
     output_query_paper_ids_by_field = query_paper_ids_by_field_all_shard[shard_num]
 
-    for paper_id in tqdm.tqdm(citation_data_direct_by_shard[shard_num].keys()):
+    pbar = tqdm.tqdm(
+        desc="#" + "{}".format(shard_num).zfill(3),
+        total=len(citation_data_direct_by_shard[shard_num].keys()),
+        position=shard_num+1)
 
+    for paper_id in citation_data_direct_by_shard[shard_num].keys():
         for cited_id in citation_data_direct_by_shard[shard_num][paper_id].keys():
             if safe_paper_ids[cited_id] == -1:
-                del output_citation_data_direct[paper_id][id_to_delete]
+                del output_citation_data_direct[paper_id][cited_id]
+
+        pbar.update(1)
 
     print("Removing query ids that no longer have any direct citations.")
     query_ids_to_remove = []
+
+    pbar = tqdm.tqdm(
+        desc="#" + "{}".format(shard_num).zfill(3),
+        total=len(output_citation_data_direct.keys()),
+        position=shard_num+1)
 
     for paper_id in tqdm.tqdm(output_citation_data_direct.keys()):
         if len(output_citation_data_direct[paper_id].keys()) == 0:
             query_ids_to_remove.append(paper_id)
 
+        pbar.update(1)
+
+    pbar = tqdm.tqdm(
+        desc="#" + "{}".format(shard_num).zfill(3),
+        total=len(query_ids_to_remove),
+        position=shard_num+1)
+
     for id_to_delete in query_ids_to_remove:
         del output_citation_data_direct[id_to_delete]
         output_query_paper_ids.remove(id_to_delete)
-        
+
         for field in output_query_paper_ids_by_field.keys():
             try:
                 output_query_paper_ids_by_field[field].remove(id_to_delete)
             except:
                 continue
+
+        pbar.update(1)
 
     return output_citation_data_direct, output_query_paper_ids, output_query_paper_ids_by_field
 
@@ -159,9 +179,9 @@ def get_citations_by_ids(ids):
 
     for paper_id in ids:
         try:
-            # this still should be accessing citation_data_direct and
-            # not citation_data_final, as cited ids may or may not be 
-            # part of citation_data_final 
+            # this should be accessing citation_data_direct and
+            # not citation_data_final, as cited ids may or may not be
+            # part of citation_data_final
             for cited_id in citation_data_direct[paper_id].keys():
                 citations.add(cited_id)
         except:
@@ -236,22 +256,17 @@ if __name__ == '__main__':
     metadata_read_pool.join()
 
     print("Combining all the metadata from all the shards...")
-    citation_data_direct = {}
+    citation_data_direct_by_shard = []
     safe_paper_ids = {}
     query_paper_ids_all_shard = []
     query_paper_ids_by_field_all_shard = []
     paper_titles = {}
-    
-    citation_data_final = {}
 
     for i, r in enumerate(tqdm.tqdm(metadata_read_results)):
 
         citation_data_by_shard, query_paper_ids, query_paper_ids_by_field, safe_ids, titles = r.get()
 
-        citation_data_direct.update(citation_data_by_shard)
-
-        if args.shards and i in args.shards:
-            citation_data_final.update(citation_data_by_shard)
+        citation_data_direct_by_shard.append(citation_data_by_shard)
 
         query_paper_ids_all_shard.append(query_paper_ids)
 
@@ -260,13 +275,44 @@ if __name__ == '__main__':
         safe_paper_ids.update(safe_ids)
 
         paper_titles.update(titles)
-        
+
+    # Remove invalid papers from citation_data_direct
+    print("Remove invalid papers from citation_data_direct...")
+    query_paper_ids_all_shard_sanitized = []
+    query_paper_ids_by_field_all_shard_sanitized = []
+
+    citation_data_direct = {}
+    citation_data_final = {}
+
+    sanitize_direct_pool = multiprocessing.Pool(processes=args.num_processes)
+    sanitize_direct_results = []
+
+    if args.shards:
+        sanitize_direct_shards_list = args.shards
+    else:
+        sanitize_direct_shards_list = list(range(SHARDS_TOTAL_NUM))
+
+    for i in sanitize_direct_shards_list:
+        sanitize_direct_results.append(
+            sanitize_direct_pool.apply_async(sanitize_citation_data_direct, args=(i,)))
+
+    sanitize_direct_pool.close()
+    sanitize_direct_pool.join()
+
+    for r in tqdm.tqdm(sanitize_direct_results):
+        citation_data_by_shard_sanitized, query_paper_ids_sanitized, query_paper_ids_by_field_sanitized = r.get()
+
+        citation_data_direct.update(citation_data_by_shard_sanitized)
+
+        if args.shards and i in args.shards:
+            citation_data_final.update(citation_data_by_shard_sanitized)
+
+        query_paper_ids_all_shard_sanitized.append(query_paper_ids_sanitized)
+
+        query_paper_ids_by_field_all_shard_sanitized.append(query_paper_ids_by_field_sanitized)
+
     if not args.shards:
         citation_data_final = citation_data_direct # If args.shards are not specified, use all shards
-        
-    # Remove invalid papers from citation_data_direct
-    print("Remove invalid papers from citation_data_indirect...")
-    sanitize_citation_data_final()
 
     # Add indirect citations (citations by each direct citation)
     print("Adding indirect citations...")
@@ -311,15 +357,15 @@ if __name__ == '__main__':
     train_file = open(os.path.join(args.save_dir, "train.txt"), 'w+')
     val_file = open(os.path.join(args.save_dir, "val.txt"), 'w+')
     test_file = open(os.path.join(args.save_dir, "test.txt"), 'w+')
-    
+
     if args.shards:
         query_paper_ids_by_field_shards_list = args.shards
     else:
         query_paper_ids_by_field_shards_list = list(range(SHARDS_TOTAL_NUM))
 
     for s in tqdm.tqdm(query_paper_ids_by_field_shards_list):
-        for field in query_paper_ids_by_field_all_shard[s].keys():
-            field_paper_ids = query_paper_ids_by_field_all_shard[s][field]
+        for field in query_paper_ids_by_field_all_shard_sanitized[s].keys():
+            field_paper_ids = query_paper_ids_by_field_all_shard_sanitized[s][field]
 
             random.shuffle(field_paper_ids)
 
@@ -354,7 +400,7 @@ if __name__ == '__main__':
     json.dump(all_paper_ids, all_paper_ids_output_file)
 
     all_paper_ids_output_file.close()
-    
+
     print("Writing safe paper ids to a file.")
     safe_paper_ids_output_file = open(os.path.join(args.save_dir, "safe_paper_ids.json"), 'w+')
 
