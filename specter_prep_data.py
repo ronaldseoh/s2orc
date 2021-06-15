@@ -125,6 +125,8 @@ def sanitize_citation_data_direct(shard_num):
     print("Removing invalid direct citations...")
 
     output_citation_data_direct = citation_data_direct_by_shard[shard_num]
+    output_query_paper_ids = query_paper_ids_all_shard[shard_num]
+    output_query_paper_ids_by_field = query_paper_ids_by_field_all_shard[shard_num]
 
     for paper_id in tqdm.tqdm(citation_data_direct_by_shard[shard_num].keys()):
 
@@ -136,14 +138,20 @@ def sanitize_citation_data_direct(shard_num):
     query_ids_to_remove = []
 
     for paper_id in tqdm.tqdm(output_citation_data_direct.keys()):
-
         if len(output_citation_data_direct[paper_id].keys()) == 0:
             query_ids_to_remove.append(paper_id)
 
     for id_to_delete in query_ids_to_remove:
         del output_citation_data_direct[id_to_delete]
+        output_query_paper_ids.remove(id_to_delete)
+        
+        for field in output_query_paper_ids_by_field.keys():
+            try:
+                output_query_paper_ids_by_field[field].remove(id_to_delete)
+            except:
+                continue
 
-    return output_citation_data_direct
+    return output_citation_data_direct, output_query_paper_ids, output_query_paper_ids_by_field
 
 def get_citations_by_ids(ids):
 
