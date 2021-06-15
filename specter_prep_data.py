@@ -117,35 +117,33 @@ def get_indirect_citations(shard_num):
         pbar.update(1)
 
     return citation_data_indirect
-    
-def sanitize_citation_data_final():
 
-    # Remove all the "unsafe" papers from citation_data_final,
-    # while avoiding iterating again through the metadata shards
-    global citation_data_final, query_paper_ids_all_shard
+def sanitize_citation_data_direct(shard_num):
 
+    # Remove all the "unsafe" papers from the shard's citation_data_direct,
+    # while avoiding iterating again through all the metadata shards
     print("Removing invalid direct citations...")
-    for paper_id in tqdm.tqdm(citation_data_final.keys()):
-        
-        cited_ids_to_remove = []
 
-        for cited_id in citation_data_final[paper_id].keys():
+    output_citation_data_direct = citation_data_direct_by_shard[shard_num]
+
+    for paper_id in tqdm.tqdm(citation_data_direct_by_shard[shard_num].keys()):
+
+        for cited_id in citation_data_direct_by_shard[shard_num][paper_id].keys():
             if safe_paper_ids[cited_id] == -1:
-                cited_ids_to_remove.append(cited_id)
-                
-        for id_to_delete in cited_ids_to_remove:
-            del citation_data_final[paper_id][id_to_delete]
-            
+                del output_citation_data_direct[paper_id][id_to_delete]
+
     print("Removing query ids that no longer have any direct citations.")
     query_ids_to_remove = []
 
-    for paper_id in tqdm.tqdm(citation_data_final.keys()):
-        
-        if len(citation_data_final[paper_id].keys()) == 0:
+    for paper_id in tqdm.tqdm(output_citation_data_direct.keys()):
+
+        if len(output_citation_data_direct[paper_id].keys()) == 0:
             query_ids_to_remove.append(paper_id)
-                
+
     for id_to_delete in query_ids_to_remove:
-        del citation_data_final[id_to_delete]
+        del output_citation_data_direct[id_to_delete]
+
+    return output_citation_data_direct
 
 def get_citations_by_ids(ids):
 
