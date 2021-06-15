@@ -300,7 +300,7 @@ if __name__ == '__main__':
     sanitize_direct_pool.close()
     sanitize_direct_pool.join()
 
-    for r in tqdm.tqdm(sanitize_direct_results):
+    for i, r in enumerate(tqdm.tqdm(sanitize_direct_results)):
         citation_data_by_shard_sanitized, query_paper_ids_sanitized, query_paper_ids_by_field_sanitized = r.get()
 
         citation_data_direct.update(citation_data_by_shard_sanitized)
