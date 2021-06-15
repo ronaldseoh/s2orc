@@ -4,6 +4,7 @@ import multiprocessing
 import argparse
 import gzip
 import random
+import copy
 
 import ujson as json
 import tqdm
@@ -124,9 +125,9 @@ def sanitize_citation_data_direct(shard_num):
     # while avoiding iterating again through all the metadata shards
     print("Removing invalid direct citations...")
 
-    output_citation_data_direct = citation_data_direct_by_shard[shard_num]
-    output_query_paper_ids = query_paper_ids_all_shard[shard_num]
-    output_query_paper_ids_by_field = query_paper_ids_by_field_all_shard[shard_num]
+    output_citation_data_direct = copy.deepcopy(citation_data_direct_by_shard[shard_num])
+    output_query_paper_ids = copy.deepcopy(query_paper_ids_all_shard[shard_num])
+    output_query_paper_ids_by_field = copy.deepcopy(query_paper_ids_by_field_all_shard[shard_num])
 
     pbar = tqdm.tqdm(
         desc="#" + "{}".format(shard_num).zfill(3),
