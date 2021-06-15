@@ -122,8 +122,9 @@ def sanitize_citation_data_final():
 
     # Remove all the "unsafe" papers from citation_data_final,
     # while avoiding iterating again through the metadata shards
-    global citation_data_final
+    global citation_data_final, query_paper_ids_all_shard
 
+    print("Removing invalid direct citations...")
     for paper_id in tqdm.tqdm(citation_data_final.keys()):
         
         cited_ids_to_remove = []
@@ -134,6 +135,17 @@ def sanitize_citation_data_final():
                 
         for id_to_delete in cited_ids_to_remove:
             del citation_data_final[paper_id][id_to_delete]
+            
+    print("Removing query ids that no longer have any direct citations.")
+    query_ids_to_remove = []
+
+    for paper_id in tqdm.tqdm(citation_data_final.keys()):
+        
+        if len(citation_data_final[paper_id].keys()) == 0:
+            query_ids_to_remove.append(paper_id)
+                
+    for id_to_delete in query_ids_to_remove:
+        del citation_data_final[id_to_delete]
 
 def get_citations_by_ids(ids):
 
