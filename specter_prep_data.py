@@ -153,6 +153,9 @@ def get_citations_by_ids(ids):
 
     for paper_id in ids:
         try:
+            # this still should be accessing citation_data_direct and
+            # not citation_data_final, as cited ids may or may not be 
+            # part of citation_data_final 
             for cited_id in citation_data_direct[paper_id].keys():
                 citations.add(cited_id)
         except:
