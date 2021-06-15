@@ -100,7 +100,7 @@ def get_indirect_citations(shard_num):
         desc="#" + "{}".format(shard_num).zfill(3), position=shard_num+1)
 
     for paper_id in query_paper_ids_all_shard_sanitized[shard_num]:
-        directly_cited_ids = citation_data_direct[paper_id].keys()
+        directly_cited_ids = citation_data_final[paper_id].keys()
 
         citation_data_indirect[paper_id] = {}
 
@@ -310,9 +310,6 @@ if __name__ == '__main__':
         query_paper_ids_all_shard_sanitized.append(query_paper_ids_sanitized)
 
         query_paper_ids_by_field_all_shard_sanitized.append(query_paper_ids_by_field_sanitized)
-
-    if not args.shards:
-        citation_data_final = citation_data_direct # If args.shards are not specified, use all shards
 
     # Add indirect citations (citations by each direct citation)
     print("Adding indirect citations...")
