@@ -257,6 +257,7 @@ if __name__ == '__main__':
     metadata_read_pool.join()
 
     print("Combining all the metadata from all the shards...")
+    citation_data_direct = {}
     citation_data_direct_by_shard = []
     safe_paper_ids = {}
     query_paper_ids_all_shard = []
@@ -266,6 +267,8 @@ if __name__ == '__main__':
     for i, r in enumerate(tqdm.tqdm(metadata_read_results)):
 
         citation_data_by_shard, query_paper_ids, query_paper_ids_by_field, safe_ids, titles = r.get()
+
+        citation_data_direct.update(citation_data_by_shard)
 
         citation_data_direct_by_shard.append(citation_data_by_shard)
 
@@ -282,7 +285,6 @@ if __name__ == '__main__':
     query_paper_ids_all_shard_sanitized = []
     query_paper_ids_by_field_all_shard_sanitized = []
 
-    citation_data_direct = {}
     citation_data_final = {}
 
     sanitize_direct_pool = multiprocessing.Pool(processes=args.num_processes)
@@ -300,13 +302,10 @@ if __name__ == '__main__':
     sanitize_direct_pool.close()
     sanitize_direct_pool.join()
 
-    for i, r in enumerate(tqdm.tqdm(sanitize_direct_results)):
-        citation_data_by_shard_sanitized, query_paper_ids_sanitized, query_paper_ids_by_field_sanitized = r.get()
+    for i in tqdm.tqdm(sanitize_direct_shards_list):
+        citation_data_by_shard_sanitized, query_paper_ids_sanitized, query_paper_ids_by_field_sanitized = sanitize_direct_results[i].get()
 
-        citation_data_direct.update(citation_data_by_shard_sanitized)
-
-        if args.shards and i in args.shards:
-            citation_data_final.update(citation_data_by_shard_sanitized)
+        citation_data_final.update(citation_data_by_shard_sanitized)
 
         query_paper_ids_all_shard_sanitized.append(query_paper_ids_sanitized)
 
