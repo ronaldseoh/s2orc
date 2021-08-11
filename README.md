@@ -44,7 +44,7 @@ In addition, both `metadata` and `pdf_parses` are sharded into 100 gziped JSONL 
     - In order to make sure that each fields of study are similarly represented in the splits, we select the set proportion of papers from each list of papers by fields.
 8. Lastly, we dump the following into files to run `specter_prep_metadata.py`:
     - `paper_ids.json`: all paper ids ever appearing as query papers or citations in `citation_data_final`
-    - `safe_paper_ids.json`: While we used this to filter out unsafe papers, this also contains which shard each paper id belongs to.
+    - `safe_paper_ids.json`: While we used this to filter out unsafe papers, this also can tell which shard each paper id belongs to.
     - `titles.json`: A dictionary of title strings for all papers. 
 
 Once we confirm that `specter_prep_data.py` ended without errors, then we can proceed to the next part with `specter_prep_metadata.py`.
