@@ -75,6 +75,8 @@ if __name__ == '__main__':
     
     for p_id in tqdm.tqdm(all_paper_ids):
         # Check which shard this paper belongs to by checking safe_paper_ids.
+        # Note that this step is necessary as safe_paper_ids also contain papers
+        # that are not part of data.json.
         shard_num = safe_paper_ids[p_id]
         
         if shard_num > -1:

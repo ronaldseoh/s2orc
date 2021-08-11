@@ -29,7 +29,7 @@ In addition, both `metadata` and `pdf_parses` are sharded into 100 gziped JSONL 
         - Note that the citations here currently may have *unsafe* citations, since we are yet to see the metadata of each citing paper that may be in a different shard.
     - `output_query_paper_ids`: all *query* paper ids in this shard.
     - `output_query_paper_ids_by_field`: query paper ids organized by `mag_field_of_study`. This is needed particularly when we create a train/val/test split later on.
-    - `output_safe_paper_ids`: Mappings between all paper ids found *safe* (have valid `mag_field_of_study`, `pdf_parse`, `pdf_parse_abstract`) and their shard #s. *Unsafe* papers will have the shard number of `-1`.
+    - `output_safe_paper_ids`: Mappings between every signle paper ids ever found to be *safe* (have valid `mag_field_of_study`, `pdf_parse`, `pdf_parse_abstract`) and their shard #s. *Unsafe* papers will have the shard number of `-1`.
     - `output_titles`: the titles of all paper ids.
 2. For each item in the step above, we combine across all the shards get single objects.
 3. With all the items returned from each shard put together, we now have `citation_data` for the entirety of s2orc, but this currently have *unsafe* citations that we have discussed above. Hence We call `sanitize_citation_data_direct` to remove them.
@@ -44,7 +44,7 @@ In addition, both `metadata` and `pdf_parses` are sharded into 100 gziped JSONL 
     - In order to make sure that each fields of study are similarly represented in the splits, we select the set proportion of papers from each list of papers by fields.
 8. Lastly, we dump the following into files to run `specter_prep_metadata.py`:
     - `paper_ids.json`: all paper ids ever appearing as query papers or citations in `citation_data_final`
-    - `safe_paper_ids.json`: While we used this to filter out unsafe papers, this also can tell which shard each paper id belongs to.
+    - `safe_paper_ids.json`: While we used this to filter out unsafe papers, this also can tell which shard each paper id belongs to. Note that this is not the same as `paper_ids.json`: This would also contain safe papers that are **NOT** part of `paper_ids.json`.
     - `titles.json`: A dictionary of title strings for all papers. 
 
 Once we confirm that `specter_prep_data.py` ended without errors, then we can proceed to the next part with `specter_prep_metadata.py`.
