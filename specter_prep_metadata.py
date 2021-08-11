@@ -101,7 +101,6 @@ if __name__ == '__main__':
     metadata = {}
 
     for r in tqdm.tqdm(pdf_parses_read_results):
-
         metadata.update(r.get())
 
     # Write metadata to a file.
