@@ -51,4 +51,6 @@ Once we confirm that `specter_prep_data.py` ended without errors, then we can pr
 
 ### Second, run `specter_prep_metadata.py` to create `metadata.json`.
 
-
+1. For each paper ids in `all_paper_ids`, we check `safe_paper_ids` to check which shard # they belong to and record them in `all_paper_ids_by_shard`.
+2. We then call `parse_pdf_parses_shard` for each `pdf_parses` shard to extract abstracts of the papers that appear in `all_paper_ids_by_shard`. If the paper currently encoutered does appear in `all_paper_ids`, then we record the abstract to `output_metadata`, along with the titles that had already been extracted in `titles.json`.
+3. We dump `metadata` to `metadata.json`.
