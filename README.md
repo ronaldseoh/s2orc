@@ -22,7 +22,7 @@ In addition, both `metadata` and `pdf_parses` are sharded into 100 gziped JSONL 
 
 ## How to run
 
-### First, run `specter_prep_data.py` to create `data.json`
+### First, run `specter_prep_data.py` to create `data.json`.
 
 1. We first call `parse_metadata_shard()` for each metadata shards to obtain the following objects:
     - `output_citation_data`: the citation graph encoded in this shard file.
@@ -48,3 +48,7 @@ In addition, both `metadata` and `pdf_parses` are sharded into 100 gziped JSONL 
     - `titles.json`: A dictionary of title strings for all papers. 
 
 Once we confirm that `specter_prep_data.py` ended without errors, then we can proceed to the next part with `specter_prep_metadata.py`.
+
+### Second, run `specter_prep_metadata.py` to create `metadata.json`.
+
+
