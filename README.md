@@ -31,7 +31,7 @@ In addition, both `metadata` and `pdf_parses` are sharded into 100 gziped JSONL 
     - `output_query_paper_ids_by_field`: query paper ids organized by `mag_field_of_study`. This is needed particularly when we create a train/val/test split later on.
     - `output_safe_paper_ids`: Mappings between every signle paper ids ever found to be *safe* (have valid `mag_field_of_study`, `pdf_parse`, `pdf_parse_abstract`) and their shard #s. *Unsafe* papers will have the shard number of `-1`.
     - `output_titles`: the titles of all paper ids.
-2. For each item in the step above, we combine across all the shards get single objects.
+2. For each items in the step above, we combine across all the shards to create single objects.
 3. With all the items returned from each shard put together, we now have `citation_data` for the entirety of s2orc, but this currently have *unsafe* citations that we have discussed above. Hence We call `sanitize_citation_data_direct` to remove them.
     - After removing unsafe citations, some query papers will be left with 0 citations. We need to remove these query papers as well.
     - `query_paper_ids` and `query_paper_ids_by_fields` also need to be updated accordingly.
