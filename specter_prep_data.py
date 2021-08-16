@@ -5,6 +5,7 @@ import argparse
 import gzip
 import random
 import copy
+import gc
 
 import ujson as json
 import tqdm
@@ -280,6 +281,9 @@ if __name__ == '__main__':
 
         paper_titles.update(titles)
 
+    # Call Python GC in between steps to mitigate any potential OOM craashes
+    gc.collect()
+
     # Remove invalid papers from citation_data_direct
     print("Remove invalid papers from citation_data_direct...")
     query_paper_ids_all_shard_sanitized = []
@@ -311,6 +315,9 @@ if __name__ == '__main__':
 
         query_paper_ids_by_field_all_shard_sanitized.append(query_paper_ids_by_field_sanitized)
 
+    # Call Python GC in between steps to mitigate any potential OOM craashes
+    gc.collect()
+
     # Add indirect citations (citations by each direct citation)
     print("Adding indirect citations...")
     indirect_citations_pool = multiprocessing.Pool(processes=args.num_processes)
@@ -337,6 +344,9 @@ if __name__ == '__main__':
         for paper_id in indirect.keys():
             citation_data_final[paper_id].update(indirect[paper_id])
 
+    # Call Python GC in between steps to mitigate any potential OOM craashes
+    gc.collect()
+
     # Write citation_data_final to a file.
     print("Writing data.json to a file.")
 
@@ -347,6 +357,9 @@ if __name__ == '__main__':
     json.dump(citation_data_final, output_file, indent=2)
 
     output_file.close()
+
+    # Call Python GC in between steps to mitigate any potential OOM craashes
+    gc.collect()
 
     # Train-validation-test split
     print("Creating train-validation-test splits.")
@@ -387,9 +400,15 @@ if __name__ == '__main__':
     val_file.close()
     test_file.close()
 
+    # Call Python GC in between steps to mitigate any potential OOM craashes
+    gc.collect()
+
     # Get all paper ids and dump them to a file as well.
     print("Getting all paper ids ever appearing in data.json.")
     all_paper_ids = get_all_paper_ids(citation_data_final)
+
+    # Call Python GC in between steps to mitigate any potential OOM craashes
+    gc.collect()
 
     print("Writing all paper ids to a file.")
     all_paper_ids_output_file = open(os.path.join(args.save_dir, "paper_ids.json"), 'w+')
@@ -398,12 +417,18 @@ if __name__ == '__main__':
 
     all_paper_ids_output_file.close()
 
+    # Call Python GC in between steps to mitigate any potential OOM craashes
+    gc.collect()
+
     print("Writing safe paper ids to a file.")
     safe_paper_ids_output_file = open(os.path.join(args.save_dir, "safe_paper_ids.json"), 'w+')
 
     json.dump(safe_paper_ids, safe_paper_ids_output_file)
 
     safe_paper_ids_output_file.close()
+
+    # Call Python GC in between steps to mitigate any potential OOM craashes
+    gc.collect()
 
     print("Writing all paper titles to a file.")
     all_titles_output_file = open(os.path.join(args.save_dir, "titles.json"), 'w+')
