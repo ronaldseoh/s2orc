@@ -24,6 +24,7 @@ def parse_pdf_parses_shard(shard_num):
         try:
             if all_paper_ids_by_shard[shard_num][paper['paper_id']]:
                 output_metadata[paper['paper_id']] = {
+                    'paper_id': paper['paper_id'],
                     'title': titles[paper['paper_id']],
                     'abstract': paper['abstract'][0]['text'],
                 }
