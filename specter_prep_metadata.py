@@ -3,6 +3,7 @@ import pathlib
 import multiprocessing
 import argparse
 import gzip
+import warnings
 
 import ujson as json
 import tqdm
@@ -81,6 +82,8 @@ if __name__ == '__main__':
         
         if shard_num > -1:
             all_paper_ids_by_shard[shard_num][p_id] = True
+        else:
+            warnings.warn("Actually, there shouldn't be any papers without valid shard_num at this point. Make sure that your copy of specter_prep_data.py is working correctly. paper_id = " + str(p_id))
 
     # Parse `pdf_parses` from s2orc to create `metadata.json` for SPECTER
     print("Parsing pdf_parses...")
@@ -102,6 +105,9 @@ if __name__ == '__main__':
 
     for r in tqdm.tqdm(pdf_parses_read_results):
         metadata.update(r.get())
+
+    # All papers in all_paper_ids must not have their metadata included un `metadata`
+    assert len(metadata.keys()) == len(all_paper_ids)
 
     # Write metadata to a file.
     print("Writing the metadata to metadata.json...")
