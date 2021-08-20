@@ -265,8 +265,7 @@ if __name__ == '__main__':
     query_paper_ids_by_field_all_shard = []
     paper_titles = {}
 
-    for i, r in enumerate(tqdm.tqdm(metadata_read_results)):
-
+    for r in tqdm.tqdm(metadata_read_results):
         citation_data_by_shard, query_paper_ids, query_paper_ids_by_field, safe_ids, titles = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
