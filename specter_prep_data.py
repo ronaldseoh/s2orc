@@ -286,13 +286,13 @@ if __name__ == '__main__':
 
     # Remove invalid papers from citation_data_direct
     print("Remove invalid papers from citation_data_direct...")
-    query_paper_ids_all_shard_sanitized = []
-    query_paper_ids_by_field_all_shard_sanitized = []
+    query_paper_ids_all_shard_sanitized = {}
+    query_paper_ids_by_field_all_shard_sanitized = {}
 
     citation_data_final = {}
 
     sanitize_direct_pool = multiprocessing.Pool(processes=args.num_processes)
-    sanitize_direct_results = []
+    sanitize_direct_results = {}
 
     if args.shards:
         sanitize_direct_shards_list = args.shards
@@ -300,8 +300,7 @@ if __name__ == '__main__':
         sanitize_direct_shards_list = list(range(SHARDS_TOTAL_NUM))
 
     for i in sanitize_direct_shards_list:
-        sanitize_direct_results.append(
-            sanitize_direct_pool.apply_async(sanitize_citation_data_direct, args=(i,)))
+        sanitize_direct_results[i] = sanitize_direct_pool.apply_async(sanitize_citation_data_direct, args=(i,))
 
     sanitize_direct_pool.close()
     sanitize_direct_pool.join()
@@ -311,9 +310,9 @@ if __name__ == '__main__':
 
         citation_data_final.update(citation_data_by_shard_sanitized)
 
-        query_paper_ids_all_shard_sanitized.append(query_paper_ids_sanitized)
+        query_paper_ids_all_shard_sanitized[i] = query_paper_ids_sanitized
 
-        query_paper_ids_by_field_all_shard_sanitized.append(query_paper_ids_by_field_sanitized)
+        query_paper_ids_by_field_all_shard_sanitized[i] = query_paper_ids_by_field_sanitized
 
     # Call Python GC in between steps to mitigate any potential OOM craashes
     gc.collect()
