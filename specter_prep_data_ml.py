@@ -6,6 +6,7 @@ import gzip
 import random
 import copy
 import gc
+import pandas as pd
 
 import ujson as json
 import tqdm
@@ -14,7 +15,6 @@ import tqdm
 # Process metadata jsonl into `data.json` as required by SPECTER.
 # Need to get all the citation information.
 def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
-
     output_citation_data = {}
     output_query_paper_ids = []
     output_query_paper_ids_by_field = {}
@@ -28,7 +28,7 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
 
     pbar = tqdm.tqdm(
         desc="#" + "{}".format(shard_num).zfill(3),
-        position=shard_num+1)
+        position=shard_num + 1)
 
     for line in metadata_file:
         paper = json.loads(line)
@@ -37,7 +37,7 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
         # have MAG field of study specified, and
         # PDF parse is available & abstract is included in PDF parse
         if not paper['mag_field_of_study'] \
-           or not paper['has_pdf_parse']:
+                or not paper['has_pdf_parse']:
             output_safe_paper_ids[paper['paper_id']] = -1
             pbar.update(1)
             continue
@@ -58,6 +58,11 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
         # if args.fields_of_study is specified, only consider the papers from
         # those fields
         if fields and not set(fields).isdisjoint(set(paper['mag_field_of_study'])):
+            pbar.update(1)
+            continue
+
+        # if arxiv_ids are given, only consider the papers which have arxiv_id in the arxiv_ids set
+        if arxiv_ids and (not paper['arxiv_id'] or paper['arxiv_id'] not in arxiv_ids):
             pbar.update(1)
             continue
 
@@ -83,7 +88,7 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
             citations = {}
 
             for out_id in paper['outbound_citations']:
-                citations[out_id] = {"count": 5} # 5 = direct citation
+                citations[out_id] = {"count": 5}  # 5 = direct citation
 
             output_citation_data[paper['paper_id']] = citations
 
@@ -93,12 +98,12 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
 
     return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
 
-def get_indirect_citations(shard_num):
 
+def get_indirect_citations(shard_num):
     citation_data_indirect = {}
 
     pbar = tqdm.tqdm(
-        desc="#" + "{}".format(shard_num).zfill(3), position=shard_num+1)
+        desc="#" + "{}".format(shard_num).zfill(3), position=shard_num + 1)
 
     for paper_id in query_paper_ids_all_shard_sanitized[shard_num]:
         directly_cited_ids = citation_data_final[paper_id].keys()
@@ -114,14 +119,14 @@ def get_indirect_citations(shard_num):
             # Also, check whether it is in the safe_paper_ids as decided
             # by the metadata parse result (have all the necessary values populated)
             if indirect_id not in directly_cited_ids and safe_paper_ids[indirect_id] > -1:
-                citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
+                citation_data_indirect[paper_id][indirect_id] = {"count": 1}  # 1 = "a citation of a citation"
 
         pbar.update(1)
 
     return citation_data_indirect
 
-def sanitize_citation_data_direct(shard_num):
 
+def sanitize_citation_data_direct(shard_num):
     # Remove all the "unsafe" papers from the shard's citation_data_direct,
     # while avoiding iterating again through all the metadata shards
     print("Removing invalid direct citations...")
@@ -133,7 +138,7 @@ def sanitize_citation_data_direct(shard_num):
     pbar = tqdm.tqdm(
         desc="#" + "{}".format(shard_num).zfill(3),
         total=len(citation_data_direct_by_shard[shard_num].keys()),
-        position=shard_num+1)
+        position=shard_num + 1)
 
     for paper_id in citation_data_direct_by_shard[shard_num].keys():
         for cited_id in citation_data_direct_by_shard[shard_num][paper_id].keys():
@@ -148,7 +153,7 @@ def sanitize_citation_data_direct(shard_num):
     pbar = tqdm.tqdm(
         desc="#" + "{}".format(shard_num).zfill(3),
         total=len(output_citation_data_direct.keys()),
-        position=shard_num+1)
+        position=shard_num + 1)
 
     for paper_id in tqdm.tqdm(output_citation_data_direct.keys()):
         if len(output_citation_data_direct[paper_id].keys()) == 0:
@@ -159,7 +164,7 @@ def sanitize_citation_data_direct(shard_num):
     pbar = tqdm.tqdm(
         desc="#" + "{}".format(shard_num).zfill(3),
         total=len(query_ids_to_remove),
-        position=shard_num+1)
+        position=shard_num + 1)
 
     for id_to_delete in query_ids_to_remove:
         del output_citation_data_direct[id_to_delete]
@@ -175,8 +180,8 @@ def sanitize_citation_data_direct(shard_num):
 
     return output_citation_data_direct, output_query_paper_ids, output_query_paper_ids_by_field
 
-def get_citations_by_ids(ids):
 
+def get_citations_by_ids(ids):
     citations = set()
 
     for paper_id in ids:
@@ -191,8 +196,8 @@ def get_citations_by_ids(ids):
 
     return citations
 
-def get_all_paper_ids(citation_data):
 
+def get_all_paper_ids(citation_data):
     all_ids = set()
 
     for paper_id in tqdm.tqdm(citation_data.keys()):
@@ -202,6 +207,18 @@ def get_all_paper_ids(citation_data):
             all_ids.add(cited_id)
 
     return list(all_ids)
+
+
+def remove_version(id_in):
+    version_start = id_in.rfind('v')
+    assert version_start > 0
+    return id_in[:version_start]
+
+
+def get_arxiv_ids():
+    arxiv_df = pd.read_csv(os.path.join(args.arxiv_dir, 'arXiv_id_ML'), delimiter='\t', engine='python')
+    arxiv_df.id = arxiv_df.id.apply(remove_version)
+    return set(arxiv_df.id)
 
 
 if __name__ == '__main__':
@@ -217,6 +234,7 @@ if __name__ == '__main__':
     parser.add_argument('--seed', default=321, type=int, help='Random seed.')
 
     parser.add_argument('--shards', nargs='*', type=int, help='Specific shards to be used.')
+    parser.add_argument('--arxiv_dir', help='path to a directory containing `arXiv_id_ML` file')
 
     parser.add_argument(
         '--val_proportion',
@@ -245,6 +263,8 @@ if __name__ == '__main__':
             if not (n >= 0 and n < SHARDS_TOTAL_NUM):
                 raise Exception("Invalid value for args.query_shard: {}".format(n))
 
+    arxiv_ids_set = get_arxiv_ids()
+
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
     metadata_read_pool = multiprocessing.Pool(processes=args.num_processes)
     metadata_read_results = []
@@ -252,7 +272,7 @@ if __name__ == '__main__':
     for i in range(SHARDS_TOTAL_NUM):
         metadata_read_results.append(
             metadata_read_pool.apply_async(
-                parse_metadata_shard, args=(i, args.fields_of_study)))
+                parse_metadata_shard, args=(i, args.fields_of_study, arxiv_ids_set)))
 
     metadata_read_pool.close()
     metadata_read_pool.join()
@@ -305,7 +325,8 @@ if __name__ == '__main__':
     sanitize_direct_pool.join()
 
     for i in tqdm.tqdm(sanitize_direct_shards_list):
-        citation_data_by_shard_sanitized, query_paper_ids_sanitized, query_paper_ids_by_field_sanitized = sanitize_direct_results[i].get()
+        citation_data_by_shard_sanitized, query_paper_ids_sanitized, query_paper_ids_by_field_sanitized = \
+        sanitize_direct_results[i].get()
 
         citation_data_final.update(citation_data_by_shard_sanitized)
 
@@ -388,10 +409,10 @@ if __name__ == '__main__':
             for paper_id in field_paper_ids[0:train_size]:
                 train_file.write(paper_id + '\n')
 
-            for paper_id in field_paper_ids[train_size:train_size+val_size]:
+            for paper_id in field_paper_ids[train_size:train_size + val_size]:
                 val_file.write(paper_id + '\n')
 
-            for paper_id in field_paper_ids[train_size+val_size:train_size+val_size+test_size]:
+            for paper_id in field_paper_ids[train_size + val_size:train_size + val_size + test_size]:
                 test_file.write(paper_id + '\n')
 
     train_file.close()
