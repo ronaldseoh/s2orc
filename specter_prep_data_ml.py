@@ -269,7 +269,9 @@ if __name__ == '__main__':
             if not (n >= 0 and n < SHARDS_TOTAL_NUM):
                 raise Exception("Invalid value for args.query_shard: {}".format(n))
 
-    arxiv_ids_set = get_arxiv_ids()
+    arxiv_ids_set = None
+    if args.arxiv_dir:
+        arxiv_ids_set = get_arxiv_ids()
 
     # Parse `metadata` from s2orc to create `data.json` for SPECTER
     metadata_read_pool = multiprocessing.Pool(processes=args.num_processes)
