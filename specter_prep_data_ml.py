@@ -35,7 +35,8 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
 
         # Only consider papers that
         # have MAG field of study specified, and
-        # PDF parse is available & abstract is included in PDF parse
+        # PDF parse is available & abstract is included in PDF parse and
+        # have arxiv ID
         if not paper['mag_field_of_study'] \
                 or not paper['has_pdf_parse']:
             output_safe_paper_ids[paper['paper_id']] = -1
@@ -43,6 +44,11 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
             continue
 
         if not paper['has_pdf_parsed_abstract']:
+            output_safe_paper_ids[paper['paper_id']] = -1
+            pbar.update(1)
+            continue
+
+        if not paper['arxiv_id']:
             output_safe_paper_ids[paper['paper_id']] = -1
             pbar.update(1)
             continue
@@ -62,7 +68,7 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
             continue
 
         # if arxiv_ids are given, only consider the papers which have arxiv_id in the arxiv_ids set
-        if arxiv_ids and (not paper['arxiv_id'] or paper['arxiv_id'] not in arxiv_ids):
+        if arxiv_ids and paper['arxiv_id'] not in arxiv_ids:
             pbar.update(1)
             continue
 
