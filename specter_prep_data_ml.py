@@ -224,7 +224,7 @@ def remove_version(id_in):
 def get_arxiv_ids():
     arxiv_df = pd.read_csv(os.path.join(args.arxiv_dir, 'arXiv_id_ML'), delimiter='\t', engine='python')
     arxiv_df.id = arxiv_df.id.apply(remove_version)
-    return set(arxiv_df.id)
+    return arxiv_df.id.unique()
 
 
 if __name__ == '__main__':
