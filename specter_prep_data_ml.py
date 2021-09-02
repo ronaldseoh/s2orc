@@ -68,7 +68,7 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
             continue
 
         # if arxiv_ids are given, only consider the papers which have arxiv_id in the arxiv_ids set
-        if arxiv_ids and set(paper['arxiv_id']).isdisjoint(arxiv_ids):
+        if arxiv_ids and paper['arxiv_id'] not in arxiv_ids:
             pbar.update(1)
             continue
 
