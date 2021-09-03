@@ -55,12 +55,6 @@ def parse_metadata_shard(shard_num, fields=None):
         # Fetch titles
         output_titles[paper['paper_id']] = paper['title']
 
-        # if args.fields_of_study is specified, only consider the papers from
-        # those fields
-        if fields and not set(fields).isdisjoint(set(paper['mag_field_of_study'])):
-            pbar.update(1)
-            continue
-
         # Query papers should have outbound citations
         if not paper['has_outbound_citations']:
             pbar.update(1)
@@ -69,11 +63,20 @@ def parse_metadata_shard(shard_num, fields=None):
         if paper['paper_id'] in output_citation_data.keys():
             print("Metadata shard {} Duplicate paper id {} found. Please check.".format(shard_num, paper['paper_id']))
         else:
+            # if args.fields_of_study is specified, only consider the papers from
+            # those fields
+            if fields and not set(fields).isdisjoint(set(paper['mag_field_of_study'])):
+                pbar.update(1)
+                continue
+
             # Record paper_id
             output_query_paper_ids.append(paper['paper_id'])
 
             # Record paper_id based on mag_field_of_study
             for paper_field in paper['mag_field_of_study']:
+                if fields and paper_field not in fields:
+                    continue
+
                 if paper_field not in output_query_paper_ids_by_field.keys():
                     output_query_paper_ids_by_field[paper_field] = []
 
