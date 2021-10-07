@@ -111,6 +111,7 @@ def add_direct_citations_as_query_papers(shard_num, fields=None):
     output_query_paper_ids_by_field = {}
     shard_papers = {}
 
+    print("Reading citations from shard {}".format(shard_num))
     metadata_file = gzip.open(
         os.path.join(args.data_dir, 'metadata', 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
 
@@ -120,35 +121,33 @@ def add_direct_citations_as_query_papers(shard_num, fields=None):
 
     metadata_file.close()
 
-    for paper_id, cited_paper_ids in citation_data_direct.items():
-        for cited_paper_id in cited_paper_ids:
-            if cited_paper_id not in query_paper_ids_all and safe_paper_ids.get(cited_paper_id, -1) == shard_num:
-                cited_paper = shard_papers[cited_paper_id]
-                if fields and not set(fields).isdisjoint(set(cited_paper['mag_field_of_study'])):
-                    continue
+    for cited_paper_id in direct_citations_by_shard[shard_num]:
+        cited_paper = shard_papers[cited_paper_id]
+        if fields and not set(fields).isdisjoint(set(cited_paper['mag_field_of_study'])):
+            continue
 
-                # Query papers should have outbound citations
-                if not cited_paper['has_outbound_citations']:
-                    continue
+        # Query papers should have outbound citations
+        if not cited_paper['has_outbound_citations']:
+            continue
 
-                if cited_paper_id not in output_citation_data.keys():
-                    # Record paper_id
-                    output_query_paper_ids.append(cited_paper_id)
+        if cited_paper_id not in output_citation_data.keys():
+            # Record paper_id
+            output_query_paper_ids.append(cited_paper_id)
 
-                    # Record paper_id based on mag_field_of_study
-                    for paper_field in cited_paper['mag_field_of_study']:
-                        if paper_field not in output_query_paper_ids_by_field.keys():
-                            output_query_paper_ids_by_field[paper_field] = []
+            # Record paper_id based on mag_field_of_study
+            for paper_field in cited_paper['mag_field_of_study']:
+                if paper_field not in output_query_paper_ids_by_field.keys():
+                    output_query_paper_ids_by_field[paper_field] = []
 
-                        output_query_paper_ids_by_field[paper_field].append(cited_paper_id)
+                output_query_paper_ids_by_field[paper_field].append(cited_paper_id)
 
-                    # Iterate through paper ids of outbound citations
-                    citations = {}
+            # Iterate through paper ids of outbound citations
+            citations = {}
 
-                    for out_id in cited_paper['outbound_citations']:
-                        citations[out_id] = {"count": 5}  # 5 = direct citation
+            for out_id in cited_paper['outbound_citations']:
+                citations[out_id] = {"count": 5}  # 5 = direct citation
 
-                    output_citation_data[cited_paper_id] = citations
+            output_citation_data[cited_paper_id] = citations
 
     return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field
 
@@ -358,8 +357,22 @@ if __name__ == '__main__':
     # Call Python GC in between steps to mitigate any potential OOM craashes
     gc.collect()
 
+    print("Collecting direct citations for each shard")
+
+    direct_citations_by_shard = []
+    for i in range(SHARDS_TOTAL_NUM):
+        direct_citations_by_shard.append([])
+
+    for paper_id, citations in citation_data_direct.items():
+        for cited_paper_id in citations.keys():
+            if cited_paper_id not in query_paper_ids_all:
+                cited_paper_shard = safe_paper_ids.get(cited_paper_id, -1)
+                if cited_paper_shard > -1:
+                    direct_citations_by_shard[cited_paper_shard].append(cited_paper_id)
+
     print("processing direct citations as query papers")
-    #Add citations of query papers as query papers
+
+    # Add citations of query papers as query papers
     add_citations_pool = multiprocessing.Pool(processes=args.num_processes)
     add_citations_results = []
 
@@ -383,7 +396,8 @@ if __name__ == '__main__':
         query_paper_ids_all_shard[i].extend(query_paper_ids)
 
         for paper_field, paper_ids in query_paper_ids_by_field.items():
-            query_paper_ids_by_field_all_shard[i][paper_field] = query_paper_ids_by_field_all_shard[i].get(paper_field, []) + paper_ids
+            query_paper_ids_by_field_all_shard[i][paper_field] = query_paper_ids_by_field_all_shard[i].get(paper_field,
+                                                                                                           []) + paper_ids
 
     # Call Python GC in between steps to mitigate any potential OOM crashes
     gc.collect()
@@ -411,7 +425,7 @@ if __name__ == '__main__':
 
     for i in tqdm.tqdm(sanitize_direct_shards_list):
         citation_data_by_shard_sanitized, query_paper_ids_sanitized, query_paper_ids_by_field_sanitized = \
-        sanitize_direct_results[i].get()
+            sanitize_direct_results[i].get()
 
         citation_data_final.update(citation_data_by_shard_sanitized)
 
