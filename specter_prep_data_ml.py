@@ -20,6 +20,8 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
     output_query_paper_ids_by_field = {}
     output_safe_paper_ids = {}
     output_titles = {}
+    output_safe_paper_ids_by_author = {}
+    output_author_by_safe_paper_ids = {}
 
     metadata_file = gzip.open(
         os.path.join(args.data_dir, 'metadata', 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
@@ -60,6 +62,14 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
 
         # Fetch titles
         output_titles[paper['paper_id']] = paper['title']
+
+        output_author_by_safe_paper_ids['paper_id'] = []
+        for author in paper['authors']:
+            author_name = _get_author_name(author)
+            if author_name not in output_safe_paper_ids_by_author:
+                output_safe_paper_ids_by_author[author_name] = []
+            output_safe_paper_ids_by_author[author_name].append(paper['paper_id'])
+            output_author_by_safe_paper_ids['paper_id'].append(author_name)
 
         # if args.fields_of_study is specified, only consider the papers from
         # those fields
@@ -102,7 +112,13 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
 
     metadata_file.close()
 
-    return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
+    return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids, output_safe_paper_ids_by_author, output_author_by_safe_paper_ids, output_titles
+
+
+def _get_author_name(author):
+    author["middle"] = "_".join(author["middle"])
+    name = "_".join(author.values)
+    return name
 
 
 def add_direct_citations_as_query_papers(shard_num, fields=None):
@@ -332,13 +348,15 @@ if __name__ == '__main__':
     citation_data_direct = {}
     citation_data_direct_by_shard = []
     safe_paper_ids = {}
+    safe_paper_ids_by_author = {}
+    authors_by_safe_paper_ids = {}
     query_paper_ids_all = []
     query_paper_ids_all_shard = []
     query_paper_ids_by_field_all_shard = []
     paper_titles = {}
 
     for r in tqdm.tqdm(metadata_read_results):
-        citation_data_by_shard, query_paper_ids, query_paper_ids_by_field, safe_ids, titles = r.get()
+        citation_data_by_shard, query_paper_ids, query_paper_ids_by_field, safe_ids, safe_ids_by_author, authors_by_paper_ids, titles = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
 
@@ -351,6 +369,13 @@ if __name__ == '__main__':
         query_paper_ids_by_field_all_shard.append(query_paper_ids_by_field)
 
         safe_paper_ids.update(safe_ids)
+
+        for author in safe_ids_by_author:
+            if author not in safe_paper_ids_by_author:
+                safe_paper_ids_by_author[author] = []
+            safe_paper_ids_by_author[author].extend(safe_ids_by_author[author])
+
+        authors_by_safe_paper_ids.update(authors_by_paper_ids)
 
         paper_titles.update(titles)
 
@@ -544,6 +569,26 @@ if __name__ == '__main__':
     json.dump(safe_paper_ids, safe_paper_ids_output_file)
 
     safe_paper_ids_output_file.close()
+
+    # Call Python GC in between steps to mitigate any potential OOM craashes
+    gc.collect()
+
+    print("Writing safe paper ids by author to a file.")
+    safe_paper_ids_author_output_file = open(os.path.join(args.save_dir, "author_data.json"), 'w+')
+
+    json.dump(safe_paper_ids_by_author, safe_paper_ids_author_output_file)
+
+    safe_paper_ids_author_output_file.close()
+
+    # Call Python GC in between steps to mitigate any potential OOM craashes
+    gc.collect()
+
+    print("Writing authors by safe paper ids to a file.")
+    authors_by_safe_paper_ids_file = open(os.path.join(args.save_dir, "author_by_paper_data.json"), 'w+')
+
+    json.dump(authors_by_safe_paper_ids, authors_by_safe_paper_ids_file)
+
+    authors_by_safe_paper_ids_file.close()
 
     # Call Python GC in between steps to mitigate any potential OOM craashes
     gc.collect()
