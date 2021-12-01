@@ -117,7 +117,7 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
 
 def _get_author_name(author):
     author["middle"] = "_".join(author["middle"])
-    name = "_".join(author.values)
+    name = "_".join(author.values())
     return name
 
 
