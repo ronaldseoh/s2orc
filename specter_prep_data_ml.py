@@ -63,13 +63,13 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
         # Fetch titles
         output_titles[paper['paper_id']] = paper['title']
 
-        output_author_by_safe_paper_ids['paper_id'] = []
+        output_author_by_safe_paper_ids[paper['paper_id']] = []
         for author in paper['authors']:
             author_name = _get_author_name(author)
             if author_name not in output_safe_paper_ids_by_author:
                 output_safe_paper_ids_by_author[author_name] = []
             output_safe_paper_ids_by_author[author_name].append(paper['paper_id'])
-            output_author_by_safe_paper_ids['paper_id'].append(author_name)
+            output_author_by_safe_paper_ids[paper['paper_id']].append(author_name)
 
         # if args.fields_of_study is specified, only consider the papers from
         # those fields
