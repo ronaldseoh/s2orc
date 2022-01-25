@@ -63,6 +63,13 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
         # Fetch titles
         output_titles[paper['paper_id']] = paper['title']
 
+        # if args.fields_of_study is specified, only consider the papers from
+        # those fields
+        if fields and not set(fields).isdisjoint(set(paper['mag_field_of_study'])):
+            pbar.update(1)
+            continue
+
+        # Store paper author mapping for all the papers with the valid field of study
         output_author_by_safe_paper_ids[paper['paper_id']] = []
         for author in paper['authors']:
             author_name = _get_author_name(author)
@@ -70,12 +77,6 @@ def parse_metadata_shard(shard_num, fields=None, arxiv_ids=None):
                 output_safe_paper_ids_by_author[author_name] = []
             output_safe_paper_ids_by_author[author_name].append(paper['paper_id'])
             output_author_by_safe_paper_ids[paper['paper_id']].append(author_name)
-
-        # if args.fields_of_study is specified, only consider the papers from
-        # those fields
-        if fields and not set(fields).isdisjoint(set(paper['mag_field_of_study'])):
-            pbar.update(1)
-            continue
 
         # if arxiv_ids are given, only consider the papers which have arxiv_id in the arxiv_ids set
         if arxiv_ids is not None and paper['arxiv_id'] not in arxiv_ids:
