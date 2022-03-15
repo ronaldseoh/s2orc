@@ -21,7 +21,7 @@ def parse_pdf_parses_shard(shard_num):
         paper = json.loads(line)
 
         try:
-            if paper['paper_id'] in mapping.keys():
+            if str(paper['paper_id']) in mapping.keys():
                 if paper['has_inbound_citations']:
                     # make the key to be S2 id (used in the specter dataset)
                     # instead of S2ORC id
@@ -58,7 +58,9 @@ if __name__ == '__main__':
 
     # Load s2id_to_s2orc_paper_id json
     print("Loading s2id_to_s2orc_paper_id json...")
-    mapping = json.load(open(args.s2id_to_s2orc_paper_id_json, 'r'))
+    mapping_original = json.load(open(args.s2id_to_s2orc_paper_id_json, 'r'))
+
+    mapping = {v: k for k, v in mapping_original.items()}
 
     # Parse `pdf_parses` from s2orc to create `metadata.json` for SPECTER
     print("Parsing pdf_parses...")
