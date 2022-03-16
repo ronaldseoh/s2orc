@@ -22,13 +22,12 @@ def parse_pdf_parses_shard(shard_num):
 
         try:
             if str(paper['paper_id']) in mapping.keys():
-                if paper['has_inbound_citations']:
-                    # make the key to be S2 id (used in the specter dataset)
-                    # instead of S2ORC id
-                    output_metadata[mapping[paper['paper_id']]] = {
-                        's2orc_id': paper['paper_id'],
-                        'inbound_citations_count': len(paper['inbound_citations']),
-                    }
+                # make the key to be S2 id (used in the specter dataset)
+                # instead of S2ORC id
+                output_metadata[mapping[paper['paper_id']]] = {
+                    's2orc_id': paper['paper_id'],
+                    'inbound_citations_count': len(paper['inbound_citations']),
+                }
         except:
             pbar.update(1)
             continue
