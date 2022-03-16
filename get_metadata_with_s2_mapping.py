@@ -34,7 +34,7 @@ def parse_metadata_shard(shard_num):
 
         pbar.update(1)
 
-    pdf_parses_file.close()
+    metadata_file.close()
 
     return output_metadata
 
