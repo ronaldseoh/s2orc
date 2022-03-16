@@ -77,7 +77,7 @@ if __name__ == '__main__':
     print("Combining all title/abstract from the shards...")
     metadata = {}
 
-    for r in tqdm.tqdm(pdf_parses_read_results):
+    for r in tqdm.tqdm(metadata_results):
         metadata.update(r.get())
 
     # Write metadata to a file.
