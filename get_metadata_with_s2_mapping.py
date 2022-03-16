@@ -8,16 +8,16 @@ import ujson as json
 import tqdm
 
 
-def parse_pdf_parses_shard(shard_num):
+def parse_metadata_shard(shard_num):
 
     output_metadata = {}
 
     pbar = tqdm.tqdm(position=shard_num+1)
 
-    pdf_parses_file = gzip.open(
-        os.path.join(args.data_dir, 'pdf_parses', 'pdf_parses_{}.jsonl.gz'.format(shard_num)), 'rt')
+    metadata_file = gzip.open(
+        os.path.join(args.data_dir, 'metadata', 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
 
-    for line in pdf_parses_file:
+    for line in metadata_file:
         paper = json.loads(line)
 
         try:
@@ -61,20 +61,18 @@ if __name__ == '__main__':
 
     mapping = {v: k for k, v in mapping_original.items()}
 
-    # Parse `pdf_parses` from s2orc to create `metadata.json` for SPECTER
-    print("Parsing pdf_parses...")
-    pdf_parses_read_pool = multiprocessing.Pool(processes=args.num_processes)
-    pdf_parses_read_results = []
+    metadata_pool = multiprocessing.Pool(processes=args.num_processes)
+    metadata_results = []
 
     for i in range(SHARDS_TOTAL_NUM):
-        pdf_parses_read_results.append(
-            pdf_parses_read_pool.apply_async(
-                parse_pdf_parses_shard, args=(i,)
+        metadata_results.append(
+            metadata_pool.apply_async(
+                parse_metadata_shard, args=(i,)
             )
         )
 
-    pdf_parses_read_pool.close()
-    pdf_parses_read_pool.join()
+    metadata_pool.close()
+    metadata_pool.join()
 
     print("Combining all title/abstract from the shards...")
     metadata = {}
