@@ -26,7 +26,8 @@ def parse_metadata_shard(shard_num):
                 # instead of S2ORC id
                 output_metadata[mapping[paper['paper_id']]] = {
                     's2orc_id': paper['paper_id'],
-                    'inbound_citations_count': len(paper['inbound_citations']),
+                    #'inbound_citations_count': len(paper['inbound_citations']),
+                    "mag_field_of_study": paper["mag_field_of_study"],
                 }
         except:
             pbar.update(1)
