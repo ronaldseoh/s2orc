@@ -6,6 +6,7 @@ import gzip
 import random
 import copy
 import gc
+import collections
 
 import ujson as json
 import tqdm
@@ -374,6 +375,12 @@ if __name__ == '__main__':
     else:
         query_paper_ids_by_field_shards_list = list(range(SHARDS_TOTAL_NUM))
 
+    # dictionary mapping s2orc id to mag field list
+    mag_fields_by_paper_ids = {}
+    mag_fields_by_paper_ids['train'] = collections.defaultdict(list)
+    mag_fields_by_paper_ids['val'] = collections.defaultdict(list)
+    mag_fields_by_paper_ids['test'] = collections.defaultdict(list)
+
     for s in tqdm.tqdm(query_paper_ids_by_field_shards_list):
         for field in query_paper_ids_by_field_all_shard_sanitized[s].keys():
             field_paper_ids = query_paper_ids_by_field_all_shard_sanitized[s][field]
@@ -390,16 +397,26 @@ if __name__ == '__main__':
 
             for paper_id in field_paper_ids[0:train_size]:
                 train_file.write(paper_id + '\n')
+                mag_fields_by_paper_ids['train'][paper_id].append(field)
 
             for paper_id in field_paper_ids[train_size:train_size+val_size]:
                 val_file.write(paper_id + '\n')
+                mag_fields_by_paper_ids['val'][paper_id].append(field)
 
             for paper_id in field_paper_ids[train_size+val_size:train_size+val_size+test_size]:
                 test_file.write(paper_id + '\n')
+                mag_fields_by_paper_ids['test'][paper_id].append(field)
 
     train_file.close()
     val_file.close()
     test_file.close()
+
+    print("Writing mag_fields_by_paper_ids to a file.")
+    mag_fields_by_paper_ids_output_file = open(os.path.join(args.save_dir, "mag_fields_by_paper_ids.json"), 'w+')
+
+    json.dump(mag_fields_by_paper_ids, mag_fields_by_paper_ids_output_file)
+
+    mag_fields_by_paper_ids_output_file.close()
 
     # Call Python GC in between steps to mitigate any potential OOM craashes
     gc.collect()
