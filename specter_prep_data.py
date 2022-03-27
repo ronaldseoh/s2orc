@@ -370,6 +370,10 @@ if __name__ == '__main__':
     val_file = open(os.path.join(args.save_dir, "val.txt"), 'w+')
     test_file = open(os.path.join(args.save_dir, "test.txt"), 'w+')
 
+    train_file_ids_written = collections.defaultdict(bool)
+    val_file_ids_written = collections.defaultdict(bool)
+    test_file_ids_written = collections.defaultdict(bool)
+
     if args.shards:
         query_paper_ids_by_field_shards_list = args.shards
     else:
@@ -396,15 +400,21 @@ if __name__ == '__main__':
                 train_size = len(field_paper_ids) - val_size - test_size
 
             for paper_id in field_paper_ids[0:train_size]:
-                train_file.write(paper_id + '\n')
+                if not train_file_ids_written[paper_id]:
+                    train_file.write(paper_id + '\n')
+                    train_file_ids_written[paper_id] = True
                 mag_fields_by_paper_ids['train'][paper_id].append(field)
 
             for paper_id in field_paper_ids[train_size:train_size+val_size]:
-                val_file.write(paper_id + '\n')
+                if not val_file_ids_written[paper_id]:
+                    val_file.write(paper_id + '\n')
+                    val_file_ids_written[paper_id] = True
                 mag_fields_by_paper_ids['val'][paper_id].append(field)
 
             for paper_id in field_paper_ids[train_size+val_size:train_size+val_size+test_size]:
-                test_file.write(paper_id + '\n')
+                if not test_file_ids_written[paper_id]:
+                    test_file.write(paper_id + '\n')
+                    test_file_ids_written[paper_id] = True
                 mag_fields_by_paper_ids['test'][paper_id].append(field)
 
     train_file.close()
