@@ -84,7 +84,7 @@ if __name__ == '__main__':
     # Write metadata to a file.
     print("Writing the metadata to metadata.json...")
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
-    output_file = open(os.path.join(args.save_dir, "metadata.json"), 'w+')
+    output_file = open(os.path.join(args.save_dir, "extra_metadata.json"), 'w+')
 
     json.dump(metadata, output_file)
 
