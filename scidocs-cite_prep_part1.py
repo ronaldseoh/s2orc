@@ -202,11 +202,11 @@ if __name__ == '__main__':
 
     parser.add_argument(
         '--val_proportion',
-        default=0.2, type=float, help='proportion of the generated dataset to be reserved for validation.')
+        default=0.4, type=float, help='proportion of the generated dataset to be reserved for validation.')
 
     parser.add_argument(
         '--test_proportion',
-        default=0.0, type=float, help='proportion of the generated dataset to be reserved for test.')
+        default=0.4, type=float, help='proportion of the generated dataset to be reserved for test.')
 
     parser.add_argument(
         '--train_proportion',
