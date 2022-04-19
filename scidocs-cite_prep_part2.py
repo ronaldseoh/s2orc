@@ -43,6 +43,7 @@ if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
 
+    parser.add_argument('data_json', help='path to data.json.')
     parser.add_argument('paper_ids_json', help='path to paper_ids.json.')
     parser.add_argument('safe_paper_ids_json', help='path to safe_paper_ids.json.')
     parser.add_argument('titles_json', help='path to titles.json.')
@@ -102,7 +103,7 @@ if __name__ == '__main__':
     pdf_parses_read_pool.join()
 
     print("Combining all title/abstract from the shards...")
-    metadata = {}
+    metadata = json.load(open(args.data_json, 'r'))
 
     for r in tqdm.tqdm(pdf_parses_read_results):
         metadata.update(r.get())
@@ -111,9 +112,9 @@ if __name__ == '__main__':
     assert len(metadata.keys()) == len(all_paper_ids)
 
     # Write metadata to a file.
-    print("Writing the metadata to metadata.json...")
+    print("Writing the metadata to data_final.json...")
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
-    output_file = open(os.path.join(args.save_dir, "metadata.json"), 'w+')
+    output_file = open(os.path.join(args.save_dir, "data_final.json"), 'w+')
 
     json.dump(metadata, output_file)
 
