@@ -116,7 +116,7 @@ def sanitize_citation_data_direct(shard_num):
     for paper_id in citation_data_direct_by_shard[shard_num].keys():
         for i, cited_id in enumerate(citation_data_direct_by_shard[shard_num][paper_id]["cites"]):
             if safe_paper_ids[cited_id] == -1:
-                del output_citation_data_direct[paper_id]["cites"][i]
+                output_citation_data_direct[paper_id]["cites"].remove(cited_id)
 
         pbar.update(1)
 
@@ -130,7 +130,7 @@ def sanitize_citation_data_direct(shard_num):
         for paper_id in citation_data_direct_by_shard[shard_num].keys():
             for i, cited_id in enumerate(citation_data_direct_by_shard[shard_num][paper_id]["cited_by"]):
                 if safe_paper_ids[cited_id] == -1:
-                    del output_citation_data_direct[paper_id]["cited_by"][i]
+                    output_citation_data_direct[paper_id]["cited_by"].remove(cited_id)
 
             pbar.update(1)
 
