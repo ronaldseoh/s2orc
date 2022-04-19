@@ -106,7 +106,10 @@ if __name__ == '__main__':
     metadata = json.load(open(args.data_json, 'r'))
 
     for r in tqdm.tqdm(pdf_parses_read_results):
-        metadata.update(r.get())
+        result = r.get()
+
+        for p_id in result.keys():
+            metadata[p_id].update(result[p_id])
 
     # All papers in all_paper_ids must not have their metadata included un `metadata`
     assert len(metadata.keys()) == len(all_paper_ids)
