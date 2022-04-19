@@ -16,11 +16,10 @@ import tqdm
 # Need to get all the citation information.
 def parse_metadata_shard(shard_num, fields=None):
 
-    output_citation_data = {}
+    output_citation_data = collections.defaultdict(dict)
     output_query_paper_ids = []
-    output_query_paper_ids_by_field = {}
+    output_query_paper_ids_by_field = collections.defaultdict(list)
     output_safe_paper_ids = {}
-    output_titles = {}
 
     metadata_file = gzip.open(
         os.path.join(args.data_dir, 'metadata', 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
@@ -54,10 +53,14 @@ def parse_metadata_shard(shard_num, fields=None):
         output_safe_paper_ids[paper['paper_id']] = shard_num
 
         # Fetch titles
-        output_titles[paper['paper_id']] = paper['title']
+        output_citation_data[paper['paper_id']]['title'] = paper['title']
 
         # Query papers should have outbound citations
         if not paper['has_outbound_citations']:
+            pbar.update(1)
+            continue
+
+        if not paper['has_inbound_citations']:
             pbar.update(1)
             continue
 
@@ -78,51 +81,18 @@ def parse_metadata_shard(shard_num, fields=None):
                 if fields and paper_field not in fields:
                     continue
 
-                if paper_field not in output_query_paper_ids_by_field.keys():
-                    output_query_paper_ids_by_field[paper_field] = []
-
                 output_query_paper_ids_by_field[paper_field].append(paper['paper_id'])
 
             # Iterate through paper ids of outbound citations
-            citations = {}
-
-            for out_id in paper['outbound_citations']:
-                citations[out_id] = {"count": 5} # 5 = direct citation
-
-            output_citation_data[paper['paper_id']] = citations
+            output_citation_data[paper['paper_id']]['cites'] = paper['outbound_citations']
+            output_citation_data[paper['paper_id']]['cited_by'] = paper['inbound_citations']
 
         pbar.update(1)
 
     metadata_file.close()
 
-    return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
+    return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids
 
-def get_indirect_citations(shard_num):
-
-    citation_data_indirect = {}
-
-    pbar = tqdm.tqdm(
-        desc="#" + "{}".format(shard_num).zfill(3), position=shard_num+1)
-
-    for paper_id in query_paper_ids_all_shard_sanitized[shard_num]:
-        directly_cited_ids = citation_data_final[paper_id].keys()
-
-        citation_data_indirect[paper_id] = {}
-
-        # Search each shards
-        indirect_citations = get_citations_by_ids(directly_cited_ids)
-
-        for indirect_id in indirect_citations:
-            # This indirect citation would serve as a hard negative only if the paper_id
-            # doesn't cite it in the first place.
-            # Also, check whether it is in the safe_paper_ids as decided
-            # by the metadata parse result (have all the necessary values populated)
-            if indirect_id not in directly_cited_ids and safe_paper_ids[indirect_id] > -1:
-                citation_data_indirect[paper_id][indirect_id] = {"count": 1} # 1 = "a citation of a citation"
-
-        pbar.update(1)
-
-    return citation_data_indirect
 
 def sanitize_citation_data_direct(shard_num):
 
