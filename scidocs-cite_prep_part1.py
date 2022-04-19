@@ -287,35 +287,6 @@ if __name__ == '__main__':
     # Call Python GC in between steps to mitigate any potential OOM craashes
     gc.collect()
 
-    # Add indirect citations (citations by each direct citation)
-    print("Adding indirect citations...")
-    indirect_citations_pool = multiprocessing.Pool(processes=args.num_processes)
-    indirect_citations_results = []
-
-    if args.shards:
-        indirect_citations_shards_list = args.shards
-    else:
-        indirect_citations_shards_list = list(range(SHARDS_TOTAL_NUM))
-
-    for i in indirect_citations_shards_list:
-        indirect_citations_results.append(
-            indirect_citations_pool.apply_async(get_indirect_citations, args=(i,)))
-
-    indirect_citations_pool.close()
-    indirect_citations_pool.join()
-
-    # Combine citation_data_direct and citation_data_indirect into a single json file.
-    print("Merging direct and indirect citations...")
-
-    for r in tqdm.tqdm(indirect_citations_results):
-        indirect = r.get()
-
-        for paper_id in indirect.keys():
-            citation_data_final[paper_id].update(indirect[paper_id])
-
-    # Call Python GC in between steps to mitigate any potential OOM craashes
-    gc.collect()
-
     # Write citation_data_final to a file.
     print("Writing data.json to a file.")
 
