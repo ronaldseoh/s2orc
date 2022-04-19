@@ -60,9 +60,10 @@ def parse_metadata_shard(shard_num, fields=None):
             pbar.update(1)
             continue
 
-        if not paper['has_inbound_citations']:
-            pbar.update(1)
-            continue
+        if args.cocite:
+            if not paper['has_inbound_citations']:
+                pbar.update(1)
+                continue
 
         if paper['paper_id'] in output_citation_data.keys():
             print("Metadata shard {} Duplicate paper id {} found. Please check.".format(shard_num, paper['paper_id']))
@@ -85,7 +86,9 @@ def parse_metadata_shard(shard_num, fields=None):
 
             # Iterate through paper ids of outbound citations
             output_citation_data[paper['paper_id']]['cites'] = paper['outbound_citations']
-            output_citation_data[paper['paper_id']]['cited_by'] = paper['inbound_citations']
+
+            if args.cocite:
+                output_citation_data[paper['paper_id']]['cited_by'] = paper['inbound_citations']
 
         pbar.update(1)
 
@@ -104,19 +107,34 @@ def sanitize_citation_data_direct(shard_num):
     output_query_paper_ids = copy.deepcopy(query_paper_ids_all_shard[shard_num])
     output_query_paper_ids_by_field = copy.deepcopy(query_paper_ids_by_field_all_shard[shard_num])
 
+    # Outbound citations
     pbar = tqdm.tqdm(
         desc="#" + "{}".format(shard_num).zfill(3),
         total=len(citation_data_direct_by_shard[shard_num].keys()),
         position=shard_num+1)
 
     for paper_id in citation_data_direct_by_shard[shard_num].keys():
-        for cited_id in citation_data_direct_by_shard[shard_num][paper_id].keys():
+        for i, cited_id in enumerate(citation_data_direct_by_shard[shard_num][paper_id]["cites"]):
             if safe_paper_ids[cited_id] == -1:
-                del output_citation_data_direct[paper_id][cited_id]
+                del output_citation_data_direct[paper_id]["cites"][i]
 
         pbar.update(1)
 
-    print("Removing query ids that no longer have any direct citations.")
+    # Inbound citations
+    if args.cocite:
+        pbar = tqdm.tqdm(
+            desc="#" + "{}".format(shard_num).zfill(3),
+            total=len(citation_data_direct_by_shard[shard_num].keys()),
+            position=shard_num+1)
+
+        for paper_id in citation_data_direct_by_shard[shard_num].keys():
+            for i, cited_id in enumerate(citation_data_direct_by_shard[shard_num][paper_id]["cited_by"]):
+                if safe_paper_ids[cited_id] == -1:
+                    del output_citation_data_direct[paper_id]["cited_by"][i]
+
+            pbar.update(1)
+
+    print("Removing query ids that no longer have any citations.")
     query_ids_to_remove = []
 
     pbar = tqdm.tqdm(
@@ -124,8 +142,10 @@ def sanitize_citation_data_direct(shard_num):
         total=len(output_citation_data_direct.keys()),
         position=shard_num+1)
 
-    for paper_id in tqdm.tqdm(output_citation_data_direct.keys()):
-        if len(output_citation_data_direct[paper_id].keys()) == 0:
+    for paper_id in output_citation_data_direct.keys():
+        if len(output_citation_data_direct[paper_id]["cites"]) == 0:
+            query_ids_to_remove.append(paper_id)
+        elif args.cocite and len(output_citation_data_direct[paper_id]["cited_by"]) == 0:
             query_ids_to_remove.append(paper_id)
 
         pbar.update(1)
@@ -149,22 +169,6 @@ def sanitize_citation_data_direct(shard_num):
 
     return output_citation_data_direct, output_query_paper_ids, output_query_paper_ids_by_field
 
-def get_citations_by_ids(ids):
-
-    citations = set()
-
-    for paper_id in ids:
-        try:
-            # this should be accessing citation_data_direct and
-            # not citation_data_final, as cited ids may or may not be
-            # part of citation_data_final
-            for cited_id in citation_data_direct[paper_id].keys():
-                citations.add(cited_id)
-        except:
-            continue
-
-    return citations
-
 def get_all_paper_ids(citation_data):
 
     all_ids = set()
@@ -172,8 +176,12 @@ def get_all_paper_ids(citation_data):
     for paper_id in tqdm.tqdm(citation_data.keys()):
         all_ids.add(paper_id)
 
-        for cited_id in citation_data[paper_id].keys():
+        for cited_id in citation_data[paper_id]['cites']:
             all_ids.add(cited_id)
+
+        if args.cocite:
+            for cited_id in citation_data[paper_id]['cited_by']:
+                all_ids.add(cited_id)
 
     return list(all_ids)
 
@@ -203,6 +211,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--train_proportion',
         type=float, help='proportion of the generated dataset to be reserved for training.')
+
+    parser.add_argument('--cocite', default=False, action='store_true')
 
     args = parser.parse_args()
 
