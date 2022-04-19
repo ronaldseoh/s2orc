@@ -109,7 +109,10 @@ if __name__ == '__main__':
         result = r.get()
 
         for p_id in result.keys():
-            metadata[p_id].update(result[p_id])
+            if p_id in metadata.keys():
+                metadata[p_id] = {**metadata[p_id], **result[p_id]}
+            else:
+                metadata[p_id] = result[p_id]
 
     # All papers in all_paper_ids must not have their metadata included un `metadata`
     assert len(metadata.keys()) == len(all_paper_ids)
