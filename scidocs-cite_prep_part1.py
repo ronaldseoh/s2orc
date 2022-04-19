@@ -20,6 +20,7 @@ def parse_metadata_shard(shard_num, fields=None):
     output_query_paper_ids = []
     output_query_paper_ids_by_field = collections.defaultdict(list)
     output_safe_paper_ids = {}
+    output_titles = {}
 
     metadata_file = gzip.open(
         os.path.join(args.data_dir, 'metadata', 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
@@ -52,8 +53,7 @@ def parse_metadata_shard(shard_num, fields=None):
         # record the paper id in safe_paper_ids
         output_safe_paper_ids[paper['paper_id']] = shard_num
 
-        # Fetch titles
-        output_citation_data[paper['paper_id']]['title'] = paper['title']
+        output_titles[paper['paper_id']] = paper['title']
 
         # Query papers should have outbound citations
         if not paper['has_outbound_citations']:
@@ -91,7 +91,7 @@ def parse_metadata_shard(shard_num, fields=None):
 
     metadata_file.close()
 
-    return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids
+    return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
 
 
 def sanitize_citation_data_direct(shard_num):
@@ -237,9 +237,10 @@ if __name__ == '__main__':
     safe_paper_ids = {}
     query_paper_ids_all_shard = []
     query_paper_ids_by_field_all_shard = []
+    paper_titles = {}
 
     for r in tqdm.tqdm(metadata_read_results):
-        citation_data_by_shard, query_paper_ids, query_paper_ids_by_field, safe_ids = r.get()
+        citation_data_by_shard, query_paper_ids, query_paper_ids_by_field, safe_ids, titles = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
 
@@ -250,6 +251,8 @@ if __name__ == '__main__':
         query_paper_ids_by_field_all_shard.append(query_paper_ids_by_field)
 
         safe_paper_ids.update(safe_ids)
+
+        paper_titles.update(titles)
 
     # Call Python GC in between steps to mitigate any potential OOM craashes
     gc.collect()
