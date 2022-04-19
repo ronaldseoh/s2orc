@@ -237,10 +237,9 @@ if __name__ == '__main__':
     safe_paper_ids = {}
     query_paper_ids_all_shard = []
     query_paper_ids_by_field_all_shard = []
-    paper_titles = {}
 
     for r in tqdm.tqdm(metadata_read_results):
-        citation_data_by_shard, query_paper_ids, query_paper_ids_by_field, safe_ids, titles = r.get()
+        citation_data_by_shard, query_paper_ids, query_paper_ids_by_field, safe_ids = r.get()
 
         citation_data_direct.update(citation_data_by_shard)
 
@@ -251,8 +250,6 @@ if __name__ == '__main__':
         query_paper_ids_by_field_all_shard.append(query_paper_ids_by_field)
 
         safe_paper_ids.update(safe_ids)
-
-        paper_titles.update(titles)
 
     # Call Python GC in between steps to mitigate any potential OOM craashes
     gc.collect()
