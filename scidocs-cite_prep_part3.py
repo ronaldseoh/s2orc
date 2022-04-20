@@ -40,6 +40,8 @@ if __name__ == '__main__':
     query_paper_ids = [i.rstrip() for i in query_paper_ids]
     query_paper_ids_file.close()
 
+    empty_cocite_count = 0
+
     with open(args.save_qrel, 'w') as qrel_file:
         for p_id in tqdm.tqdm(query_paper_ids):
             if args.cocite:
@@ -56,6 +58,10 @@ if __name__ == '__main__':
                         continue
 
                 # Get the paper ids until there are at least 5 papers
+                if len(counter.values()) == 0:
+                    empty_cocite_count += 1
+                    continue
+
                 frequency = max(counter.values())
                 positive_candidates = []
                 
@@ -83,3 +89,5 @@ if __name__ == '__main__':
 
             for neg_id in negatives:
                 qrel_file.write(str(p_id) + " 0 " + str(neg_id) + " 0\n")
+
+    print("empty_cocite_count = ", str(empty_cocite_count))
