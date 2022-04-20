@@ -63,7 +63,10 @@ if __name__ == '__main__':
                 positive_candidates = data[p_id]["cites"]
 
             # Randomly select 5 positive papers
-            positives = random.sample(positive_candidates, k=5)
+            if len(positive_candidates) < 5:
+                positives = positive_candidates
+            else:
+                positives = random.sample(positive_candidates, k=5)
             
             # Sample from the non-cited papers
             all_paper_ids_without_positive_candidates = all_paper_ids - set(positive_candidates)
