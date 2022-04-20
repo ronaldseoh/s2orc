@@ -56,8 +56,13 @@ if __name__ == '__main__':
                     except KeyError:
                         continue
 
-                # Get the paper ids with max counts only
-                positive_candidates = [x[0] for x in counter.most_common(max(counter.values()))]
+                # Get the paper ids until there are at least 5 papers
+                frequency = max(counter.values())
+                positive_candidates = []
+                
+                while len(positive_candidates) < 5 and frequency > 0:
+                    positive_candidates += [x[0] for x in counter.most_common()]
+                    frequency -= 1
             else:
                 # Outbound citations
                 positive_candidates = data[p_id]["cites"]
