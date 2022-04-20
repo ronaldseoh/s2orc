@@ -3,6 +3,7 @@ import random
 
 import ujson as json
 import tqdm
+import collections
 
 
 if __name__ == '__main__':
@@ -16,6 +17,8 @@ if __name__ == '__main__':
     parser.add_argument('save_qrel', help='path to a directory to save the processed files.')
 
     parser.add_argument('--seed', default=321, type=int, help='Random seed.')
+
+    parser.add_argument('--cocite', default=False, action='store_true')
 
     args = parser.parse_args()
 
@@ -38,17 +41,34 @@ if __name__ == '__main__':
 
     with open(args.save_qrel, 'w') as qrel_file:
         for p_id in tqdm.tqdm(query_paper_ids):
-            # Outbound citations
-            cites = data[p_id]["cites"]
+            if args.cocite:
+                counter = collections.Counter()
+
+                cited_by = data[p_id]["cited_by"]
+
+                for cited_by_p_id in cited_by:
+                    cited_by_p_id_cites = set(data[cited_by_p_id]["cites"])
+
+                    try:
+                        cited_by_p_id_cites.remove(p_id)
+                        counter.update(cited_by_p_id_cites)
+                    except KeyError:
+                        continue
+
+                # Get the paper ids with max counts only
+                positive_candidates = [x[0] for x in counter.most_common(max(counter.values()))]
+            else:
+                # Outbound citations
+                positive_candidates = data[p_id]["cites"]
 
             # Randomly select 5 positive papers
-            positives = random.sample(cites, k=5)
+            positives = random.sample(positive_candidates, k=5)
             
             # Sample from the non-cited papers
-            all_paper_ids_without_cites = all_paper_ids - set(cites)
+            all_paper_ids_without_positive_candidates = all_paper_ids - set(positive_candidates)
             
             # Randomly select 25 negative papers
-            negatives = random.sample(all_paper_ids_without_cites, k=25)
+            negatives = random.sample(all_paper_ids_without_positive_candidates, k=25)
 
             for pos_id in positives:
                 qrel_file.write(str(p_id) + " 0 " + str(pos_id) + " 1\n")
