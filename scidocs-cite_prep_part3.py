@@ -48,9 +48,8 @@ if __name__ == '__main__':
                 cited_by = data[p_id]["cited_by"]
 
                 for cited_by_p_id in cited_by:
-                    cited_by_p_id_cites = set(data[cited_by_p_id]["cites"])
-
                     try:
+                        cited_by_p_id_cites = set(data[cited_by_p_id]["cites"])
                         cited_by_p_id_cites.remove(p_id)
                         counter.update(cited_by_p_id_cites)
                     except KeyError:
