@@ -72,6 +72,8 @@ if __name__ == '__main__':
                 # Outbound citations
                 positive_candidates = data[p_id]["cites"]
 
+            positive_candidates = set(positive_candidates)
+
             # Randomly select 5 positive papers
             if len(positive_candidates) < 5:
                 positives = positive_candidates
@@ -79,7 +81,7 @@ if __name__ == '__main__':
                 positives = random.sample(positive_candidates, k=5)
             
             # Sample from the non-cited papers
-            all_paper_ids_without_positive_candidates = all_paper_ids - set(positive_candidates)
+            all_paper_ids_without_positive_candidates = all_paper_ids - positive_candidates
             
             # Randomly select 25 negative papers
             negatives = random.sample(all_paper_ids_without_positive_candidates, k=25)
