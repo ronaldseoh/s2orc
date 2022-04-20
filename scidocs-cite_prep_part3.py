@@ -66,7 +66,7 @@ if __name__ == '__main__':
                 positive_candidates = []
                 
                 while len(positive_candidates) < 5 and frequency > 0:
-                    positive_candidates += [x[0] for x in counter.most_common()]
+                    positive_candidates += [x[0] for x in counter.most_common(frequency)]
                     frequency -= 1
             else:
                 # Outbound citations
