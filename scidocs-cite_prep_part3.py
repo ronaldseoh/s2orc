@@ -83,8 +83,8 @@ if __name__ == '__main__':
             # Sample from the non-cited papers
             all_paper_ids_without_positive_candidates = all_paper_ids - positive_candidates
             
-            # Randomly select 25 negative papers
-            negatives = random.sample(all_paper_ids_without_positive_candidates, k=25)
+            # Randomly select 50 negative papers
+            negatives = random.sample(all_paper_ids_without_positive_candidates, k=50)
 
             for pos_id in positives:
                 qrel_file.write(str(p_id) + " 0 " + str(pos_id) + " 1\n")
