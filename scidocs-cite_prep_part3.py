@@ -37,6 +37,7 @@ if __name__ == '__main__':
 
     query_paper_ids_file = open(args.query_paper_ids_txt, 'r')
     query_paper_ids = query_paper_ids_file.readlines()
+    query_paper_ids = [i.rstrip() for i in query_paper_ids]
     query_paper_ids_file.close()
 
     with open(args.save_qrel, 'w') as qrel_file:
