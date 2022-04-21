@@ -12,6 +12,7 @@ if __name__ == '__main__':
 
     parser.add_argument('data_json', help='path to data.json.')
     parser.add_argument('paper_ids_json', help='path to paper_ids.json.')
+    parser.add_argument('mag_fields_by_all_paper_ids_json', help='path to mag_fields_by_all_paper_ids.json.')
     parser.add_argument('query_paper_ids_txt', help='path to the txt file containing query paper ids.')
 
     parser.add_argument('save_qrel', help='path to a directory to save the processed files.')
@@ -35,6 +36,11 @@ if __name__ == '__main__':
     all_paper_ids = set(json.load(all_paper_ids_file))
     all_paper_ids_file.close()
 
+    print("Loading mag_fields_by_all_paper_ids.json...")
+    mag_fields_by_all_paper_ids_file = open(args.mag_fields_by_all_paper_ids_json, 'r') 
+    mag_fields_by_all_paper_ids = set(json.load(mag_fields_by_all_paper_ids_file))
+    mag_fields_by_all_paper_ids_file.close()
+
     query_paper_ids_file = open(args.query_paper_ids_txt, 'r')
     query_paper_ids = query_paper_ids_file.readlines()
     query_paper_ids = [i.rstrip() for i in query_paper_ids]
@@ -44,6 +50,11 @@ if __name__ == '__main__':
 
     with open(args.save_qrel, 'w') as qrel_file:
         for p_id in tqdm.tqdm(query_paper_ids):
+            if p_id not in mag_fields_by_all_paper_ids.keys():
+                continue
+
+            p_id_mag_fields = set(mag_fields_by_all_paper_ids[p_id])
+
             if args.cocite:
                 counter = collections.Counter()
 
@@ -81,10 +92,20 @@ if __name__ == '__main__':
                 positives = random.sample(positive_candidates, k=5)
             
             # Sample from the non-cited papers
-            all_paper_ids_without_positive_candidates = all_paper_ids - positive_candidates
-            
+            negative_candidates = all_paper_ids - positive_candidates
+
+            # Filter based on MAG field information
+            for nc in negative_candidates:
+                if nc not in mag_fields_by_all_paper_ids.keys():
+                    negative_candidates.remove(nc)
+                elif not set(mag_fields_by_all_paper_ids[nc]).disjoint(p_id_mag_fields):
+                    negative_candidates.remove(nc)
+
             # Randomly select 50 negative papers
-            negatives = random.sample(all_paper_ids_without_positive_candidates, k=50)
+            if len(negative_candidates) < 50:
+                negatives = negative_candidates
+            else:
+                negatives = random.sample(negative_candidates, k=50)
 
             for pos_id in positives:
                 qrel_file.write(str(p_id) + " 0 " + str(pos_id) + " 1\n")
