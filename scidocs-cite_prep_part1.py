@@ -331,10 +331,10 @@ if __name__ == '__main__':
         query_paper_ids_by_field_shards_list = list(range(SHARDS_TOTAL_NUM))
 
     # dictionary mapping s2orc id to mag field list
-    mag_fields_by_paper_ids = {}
-    mag_fields_by_paper_ids['train'] = collections.defaultdict(list)
-    mag_fields_by_paper_ids['val'] = collections.defaultdict(list)
-    mag_fields_by_paper_ids['test'] = collections.defaultdict(list)
+    mag_fields_by_query_paper_ids = {}
+    mag_fields_by_query_paper_ids['train'] = collections.defaultdict(list)
+    mag_fields_by_query_paper_ids['val'] = collections.defaultdict(list)
+    mag_fields_by_query_paper_ids['test'] = collections.defaultdict(list)
 
     for s in tqdm.tqdm(query_paper_ids_by_field_shards_list):
         for field in query_paper_ids_by_field_all_shard_sanitized[s].keys():
@@ -354,30 +354,30 @@ if __name__ == '__main__':
                 if not train_file_ids_written[paper_id]:
                     train_file.write(paper_id + '\n')
                     train_file_ids_written[paper_id] = True
-                mag_fields_by_paper_ids['train'][paper_id].append(field)
+                mag_fields_by_query_paper_ids['train'][paper_id].append(field)
 
             for paper_id in field_paper_ids[train_size:train_size+val_size]:
                 if not val_file_ids_written[paper_id]:
                     val_file.write(paper_id + '\n')
                     val_file_ids_written[paper_id] = True
-                mag_fields_by_paper_ids['val'][paper_id].append(field)
+                mag_fields_by_query_paper_ids['val'][paper_id].append(field)
 
             for paper_id in field_paper_ids[train_size+val_size:train_size+val_size+test_size]:
                 if not test_file_ids_written[paper_id]:
                     test_file.write(paper_id + '\n')
                     test_file_ids_written[paper_id] = True
-                mag_fields_by_paper_ids['test'][paper_id].append(field)
+                mag_fields_by_query_paper_ids['test'][paper_id].append(field)
 
     train_file.close()
     val_file.close()
     test_file.close()
 
     print("Writing mag_fields_by_paper_ids to a file.")
-    mag_fields_by_paper_ids_output_file = open(os.path.join(args.save_dir, "mag_fields_by_paper_ids.json"), 'w+')
+    mag_fields_by_query_paper_ids_output_file = open(os.path.join(args.save_dir, "mag_fields_by_query_paper_ids.json"), 'w+')
 
-    json.dump(mag_fields_by_paper_ids, mag_fields_by_paper_ids_output_file)
+    json.dump(mag_fields_by_query_paper_ids, mag_fields_by_query_paper_ids_output_file)
 
-    mag_fields_by_paper_ids_output_file.close()
+    mag_fields_by_query_paper_ids_output_file.close()
 
     # Call Python GC in between steps to mitigate any potential OOM craashes
     gc.collect()
