@@ -1,5 +1,6 @@
 import argparse
 import random
+import copy
 
 import ujson as json
 import tqdm
@@ -92,10 +93,11 @@ if __name__ == '__main__':
                 positives = random.sample(positive_candidates, k=5)
             
             # Sample from the non-cited papers
-            negative_candidates = all_paper_ids - positive_candidates
+            negative_candidates_temp = all_paper_ids - positive_candidates
+            negative_candidates = copy.deepcopy(negative_candidates_temp)
 
             # Filter based on MAG field information
-            for nc in negative_candidates:
+            for nc in negative_candidates_temp:
                 if nc not in mag_fields_by_all_paper_ids.keys():
                     negative_candidates.remove(nc)
                 elif not set(mag_fields_by_all_paper_ids[nc]).isdisjoint(p_id_mag_fields):
