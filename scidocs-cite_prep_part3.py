@@ -1,11 +1,31 @@
 import argparse
 import random
-import copy
+import multiprocessing
 
 import ujson as json
 import tqdm
 import collections
 
+
+def remove_negative_candidates(process_num):
+
+    indexes_to_process = []
+
+    filtered_ids = []
+
+    # Filter based on MAG field information
+    for i in indexes_to_process:
+        nc = negative_candidates_temp[i]
+
+        try:
+            nc_mag_fields = set(mag_fields_by_all_paper_ids[nc])
+        except:
+            continue
+
+        if nnc_mag_fields.isdisjoint(p_id_mag_fields):
+            nc_mag_fields.append(nc)
+
+    return filtered_ids
 
 if __name__ == '__main__':
 
@@ -21,6 +41,8 @@ if __name__ == '__main__':
     parser.add_argument('--seed', default=321, type=int, help='Random seed.')
 
     parser.add_argument('--cocite', default=False, action='store_true')
+
+    parser.add_argument('--num_processes', default=10, type=int, help='Number of processes to use.')
 
     args = parser.parse_args()
 
@@ -93,19 +115,27 @@ if __name__ == '__main__':
                 positives = random.sample(positive_candidates, k=5)
             
             # Sample from the non-cited papers
-            negative_candidates_temp = all_paper_ids - positive_candidates
-            negative_candidates = copy.deepcopy(negative_candidates_temp)
+            negative_candidates_temp = list(all_paper_ids - positive_candidates)
 
-            # Filter based on MAG field information
-            for nc in negative_candidates_temp:
-                try:
-                    mc_mag_fields = set(mag_fields_by_all_paper_ids[nc])
-                except:
-                    negative_candidates.remove(nc)
-                    continue
+            print("filtering negative candidates...")
+            negative_candidates_filter_pool = multiprocessing.Pool(processes=args.num_processes)
+            negative_candidates_filter_results = []
 
-                if not mc_mag_fields.isdisjoint(p_id_mag_fields):
-                    negative_candidates.remove(nc)
+            for np in range(args.num_processes):
+                negative_candidates_filter_results.append(
+                    negative_candidates_filter_pool.apply_async(
+                        remove_negative_candidates, args=(np,)
+                    )
+                )
+
+            negative_candidates_filter_pool.close()
+            negative_candidates_filter_pool.join()
+
+            negative_candidates = []
+
+            for r in tqdm.tqdm(negative_candidates_filter_results):
+                result = r.get()
+                negative_candidates += result
 
             # Randomly select 50 negative papers
             if len(negative_candidates) < 50:
