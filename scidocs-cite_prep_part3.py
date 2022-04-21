@@ -98,7 +98,7 @@ if __name__ == '__main__':
             for nc in negative_candidates:
                 if nc not in mag_fields_by_all_paper_ids.keys():
                     negative_candidates.remove(nc)
-                elif not set(mag_fields_by_all_paper_ids[nc]).disjoint(p_id_mag_fields):
+                elif not set(mag_fields_by_all_paper_ids[nc]).isdisjoint(p_id_mag_fields):
                     negative_candidates.remove(nc)
 
             # Randomly select 50 negative papers
