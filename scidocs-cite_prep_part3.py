@@ -8,8 +8,14 @@ import collections
 
 
 def remove_negative_candidates(process_num):
+    cum_count_before_this_process = int(len(negative_candidates_temp) / args.num_processes) * (process_num)
 
-    indexes_to_process = []
+    if process_num == args.num_processes - 1:
+        cum_count_until_this_process = len(negative_candidates_temp)
+    else:
+        cum_count_until_this_process = int(len(negative_candidates_temp) / args.num_processes) * (process_num + 1)
+
+    indexes_to_process = range(cum_count_before_this_process, cum_count_until_this_process)
 
     filtered_ids = []
 
