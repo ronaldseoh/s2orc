@@ -110,7 +110,7 @@ def parse_metadata_get_mag_shard(shard_num):
         paper = json.loads(line)
 
         try:
-            if str(paper['paper_id']) in safe_paper_ids_inversed[shard_num]:
+            safe_paper_ids[str(paper['paper_id'])] == shard_num:
                 mag_fields_shard[str(paper['paper_id'])] = paper["mag_field_of_study"]
         except:
             pbar.update(1)
@@ -426,11 +426,6 @@ if __name__ == '__main__':
     gc.collect()
 
     print("Getting MAG fields information for all (safe) paper ids.")
-    safe_paper_ids_inversed = collections.defaultdict(list)
-
-    for k, v in safe_paper_ids.items():
-        safe_paper_ids_inversed[v].append(k)
-
     metadata_mag_field_pool = multiprocessing.Pool(processes=args.num_processes)
     metadata_mag_field_results = []
 
