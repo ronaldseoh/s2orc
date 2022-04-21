@@ -98,9 +98,13 @@ if __name__ == '__main__':
 
             # Filter based on MAG field information
             for nc in negative_candidates_temp:
-                if nc not in mag_fields_by_all_paper_ids.keys():
+                try:
+                    mc_mag_fields = set(mag_fields_by_all_paper_ids[nc])
+                except:
                     negative_candidates.remove(nc)
-                elif not set(mag_fields_by_all_paper_ids[nc]).isdisjoint(p_id_mag_fields):
+                    continue
+
+                if not mc_mag_fields.isdisjoint(p_id_mag_fields):
                     negative_candidates.remove(nc)
 
             # Randomly select 50 negative papers
