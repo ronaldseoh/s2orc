@@ -97,6 +97,32 @@ def parse_metadata_shard(shard_num, fields=None):
     return output_citation_data, output_query_paper_ids, output_query_paper_ids_by_field, output_safe_paper_ids, output_titles
 
 
+def parse_metadata_get_mag_shard(shard_num):
+
+    mag_fields_shard = {}
+
+    pbar = tqdm.tqdm(position=shard_num+1)
+
+    metadata_file = gzip.open(
+        os.path.join(args.data_dir, 'metadata', 'metadata_{}.jsonl.gz'.format(shard_num)), 'rt')
+
+    for line in metadata_file:
+        paper = json.loads(line)
+
+        try:
+            if str(paper['paper_id']) in all_paper_ids:
+                mag_fields_shard[paper['paper_id']] = paper["mag_field_of_study"]
+        except:
+            pbar.update(1)
+            continue
+
+        pbar.update(1)
+
+    metadata_file.close()
+
+    return mag_fields_shard
+
+
 def sanitize_citation_data_direct(shard_num):
 
     # Remove all the "unsafe" papers from the shard's citation_data_direct,
@@ -398,6 +424,34 @@ if __name__ == '__main__':
 
     # Call Python GC in between steps to mitigate any potential OOM craashes
     gc.collect()
+
+    print("Getting MAG fields information for all paper ids.")
+    metadata_mag_field_pool = multiprocessing.Pool(processes=args.num_processes)
+    metadata_mag_field_results = []
+
+    for i in range(SHARDS_TOTAL_NUM):
+        metadata_mag_field_results.append(
+            metadata_mag_field_pool.apply_async(
+                parse_metadata_get_mag_shard, args=(i,)
+            )
+        )
+
+    metadata_mag_field_pool.close()
+    metadata_mag_field_pool.join()
+
+    metadata_mag_fields = {}
+
+    for r in tqdm.tqdm(metadata_mag_field_results):
+        metadata_mag_fields.update(r.get())
+
+    # Write metadata to a file.
+    print("Writing the MAG field information...")
+    pathlib.Path(args.save_dir).mkdir(exist_ok=True)
+    metadata_mag_fields_output_file = open(os.path.join(args.save_dir, "mag_fields_by_all_paper_ids.json"), 'w+')
+
+    json.dump(metadata_mag_fields, metadata_mag_fields_output_file)
+
+    metadata_mag_fields_output_file.close()
 
     print("Writing safe paper ids to a file.")
     safe_paper_ids_output_file = open(os.path.join(args.save_dir, "safe_paper_ids.json"), 'w+')
