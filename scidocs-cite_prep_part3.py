@@ -28,8 +28,8 @@ def remove_negative_candidates(process_num):
         except:
             continue
 
-        if nnc_mag_fields.isdisjoint(p_id_mag_fields):
-            nc_mag_fields.append(nc)
+        if nc_mag_fields.isdisjoint(p_id_mag_fields):
+            filtered_ids.append(nc)
 
     return filtered_ids
 
