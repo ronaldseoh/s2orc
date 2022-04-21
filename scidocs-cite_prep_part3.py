@@ -38,7 +38,6 @@ if __name__ == '__main__':
 
     print("Loading mag_fields_by_all_paper_ids.json...")
     mag_fields_by_all_paper_ids_file = open(args.mag_fields_by_all_paper_ids_json, 'r') 
-    mag_fields_by_all_paper_ids = set(json.load(mag_fields_by_all_paper_ids_file))
     mag_fields_by_all_paper_ids_file.close()
 
     query_paper_ids_file = open(args.query_paper_ids_txt, 'r')
