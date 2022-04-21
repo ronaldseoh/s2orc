@@ -110,7 +110,7 @@ def parse_metadata_get_mag_shard(shard_num):
         paper = json.loads(line)
 
         try:
-            safe_paper_ids[str(paper['paper_id'])] == shard_num:
+            if safe_paper_ids[str(paper['paper_id'])] == shard_num:
                 mag_fields_shard[str(paper['paper_id'])] = paper["mag_field_of_study"]
         except:
             pbar.update(1)
