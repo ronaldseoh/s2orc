@@ -35,11 +35,6 @@ if __name__ == '__main__':
     all_paper_ids = set(json.load(all_paper_ids_file))
     all_paper_ids_file.close()
 
-    print("Loading mag_fields_by_all_paper_ids.json...")
-    mag_fields_by_all_paper_ids_file = open(args.mag_fields_by_all_paper_ids_json, 'r') 
-    mag_fields_by_all_paper_ids = json.load(mag_fields_by_all_paper_ids_file)
-    mag_fields_by_all_paper_ids_file.close()
-
     query_paper_ids_file = open(args.query_paper_ids_txt, 'r')
     query_paper_ids = query_paper_ids_file.readlines()
     query_paper_ids = [i.rstrip() for i in query_paper_ids]
@@ -49,11 +44,6 @@ if __name__ == '__main__':
 
     with open(args.save_qrel, 'w') as qrel_file:
         for p_id in tqdm.tqdm(query_paper_ids):
-            if p_id not in mag_fields_by_all_paper_ids.keys():
-                continue
-
-            p_id_mag_fields = set(mag_fields_by_all_paper_ids[p_id])
-
             if args.cocite:
                 counter = collections.Counter()
 
