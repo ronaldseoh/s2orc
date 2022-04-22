@@ -12,7 +12,6 @@ if __name__ == '__main__':
 
     parser.add_argument('data_json', help='path to data.json.')
     parser.add_argument('paper_ids_json', help='path to paper_ids.json.')
-    parser.add_argument('mag_fields_by_all_paper_ids_json', help='path to mag_fields_by_all_paper_ids.json.')
     parser.add_argument('query_paper_ids_txt', help='path to the txt file containing query paper ids.')
 
     parser.add_argument('save_qrel', help='path to a directory to save the processed files.')
@@ -96,22 +95,10 @@ if __name__ == '__main__':
 
             # Randomly select 50 negative papers
             if len(negative_candidates) < 50:
-                negatives_temp = negative_candidates
+                negatives = negative_candidates
             else:
                 # 100 papers to give some buffer(?) for the filtering later on
-                negatives_temp = random.sample(negative_candidates, k=100)
-
-            # Filter based on MAG field information
-            negatives = []
-
-            for nc in negatives_temp:
-                try:
-                    nc_mag_fields = set(mag_fields_by_all_paper_ids[nc])
-                except:
-                    continue
-
-                if nc_mag_fields.isdisjoint(p_id_mag_fields):
-                    negatives.append(nc)
+                negatives = random.sample(negative_candidates, k=100)
 
             for pos_id in positives:
                 qrel_file.write(str(p_id) + " 0 " + str(pos_id) + " 1\n")
