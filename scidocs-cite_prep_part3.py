@@ -1,6 +1,5 @@
 import argparse
 import random
-import copy
 
 import ujson as json
 import tqdm
@@ -93,25 +92,26 @@ if __name__ == '__main__':
                 positives = random.sample(positive_candidates, k=5)
             
             # Sample from the non-cited papers
-            negative_candidates_temp = all_paper_ids - positive_candidates
-            negative_candidates = copy.deepcopy(negative_candidates_temp)
-
-            # Filter based on MAG field information
-            for nc in negative_candidates_temp:
-                try:
-                    mc_mag_fields = set(mag_fields_by_all_paper_ids[nc])
-                except:
-                    negative_candidates.remove(nc)
-                    continue
-
-                if not mc_mag_fields.isdisjoint(p_id_mag_fields):
-                    negative_candidates.remove(nc)
+            negative_candidates = all_paper_ids - positive_candidates
 
             # Randomly select 50 negative papers
             if len(negative_candidates) < 50:
-                negatives = negative_candidates
+                negatives_temp = negative_candidates
             else:
-                negatives = random.sample(negative_candidates, k=50)
+                # 100 papers to give some buffer(?) for the filtering later on
+                negatives_temp = random.sample(negative_candidates, k=100)
+
+            # Filter based on MAG field information
+            negatives = []
+
+            for nc in negatives_temp:
+                try:
+                    nc_mag_fields = set(mag_fields_by_all_paper_ids[nc])
+                except:
+                    continue
+
+                if nc_mag_fields.isdisjoint(p_id_mag_fields):
+                    negatives.append(nc)
 
             for pos_id in positives:
                 qrel_file.write(str(p_id) + " 0 " + str(pos_id) + " 1\n")
