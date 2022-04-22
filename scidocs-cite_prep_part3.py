@@ -139,7 +139,7 @@ if __name__ == '__main__':
 
             negative_candidates = []
 
-            for r in negative_candidates_filter_results:
+            for r in tqdm.tqdm(negative_candidates_filter_results):
                 result = r.get()
                 negative_candidates += result
 
