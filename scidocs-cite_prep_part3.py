@@ -18,6 +18,9 @@ if __name__ == '__main__':
 
     parser.add_argument('--seed', default=321, type=int, help='Random seed.')
 
+    parser.add_argument('--max_num_positives', default=25, type=int, help='Maximum number of positive examples to include.')
+    parser.add_argument('--max_num_negatives', default=50, type=int, help='Maximum number of positive examples to include.')
+
     parser.add_argument('--cocite', default=False, action='store_true')
 
     args = parser.parse_args()
@@ -57,15 +60,15 @@ if __name__ == '__main__':
                     except KeyError:
                         continue
 
-                # Get the paper ids until there are at least 5 papers
                 if len(counter.values()) == 0:
                     empty_cocite_count += 1
                     continue
 
+                # Get the paper ids until there are at least 5 papers
                 frequency = max(counter.values())
                 positive_candidates = []
                 
-                while len(positive_candidates) < 25 and frequency > 0:
+                while len(positive_candidates) < args.max_num_positives and frequency > 0:
                     positive_candidates += [x[0] for x in counter.most_common(frequency)]
                     frequency -= 1
             else:
@@ -80,11 +83,11 @@ if __name__ == '__main__':
             except:
                 pass
 
-            # Randomly select 5 positive papers
-            if len(positive_candidates) < 25:
+            # Randomly select max_num_positives positive papers
+            if len(positive_candidates) < args.max_num_positives:
                 positives = positive_candidates
             else:
-                positives = random.sample(positive_candidates, k=25)
+                positives = random.sample(positive_candidates, k=args.max_num_positives)
             
             # Sample from the non-cited papers
             negative_candidates = all_paper_ids - positive_candidates
@@ -97,10 +100,10 @@ if __name__ == '__main__':
 
 
             # Randomly select 50 negative papers
-            if len(negative_candidates) < 50:
+            if len(negative_candidates) < args.max_num_negatives:
                 negatives = negative_candidates
             else:
-                negatives = random.sample(negative_candidates, k=50)
+                negatives = random.sample(negative_candidates, k=args.max_num_negatives)
 
             for pos_id in positives:
                 qrel_file.write(str(p_id) + " 0 " + str(pos_id) + " 1\n")
