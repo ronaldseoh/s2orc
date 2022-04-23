@@ -74,6 +74,12 @@ if __name__ == '__main__':
 
             positive_candidates = set(positive_candidates)
 
+            try:
+                # Just in case the query paper itself is among the candidates...
+                positive_candidates.remove(p_id)
+            except:
+                pass
+
             # Randomly select 5 positive papers
             if len(positive_candidates) < 25:
                 positives = positive_candidates
@@ -82,6 +88,13 @@ if __name__ == '__main__':
             
             # Sample from the non-cited papers
             negative_candidates = all_paper_ids - positive_candidates
+
+            try:
+                # Just in case the query paper itself is among the candidates...
+                negative_candidates.remove(p_id)
+            except:
+                pass
+
 
             # Randomly select 50 negative papers
             if len(negative_candidates) < 50:
