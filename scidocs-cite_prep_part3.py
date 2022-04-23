@@ -75,10 +75,10 @@ if __name__ == '__main__':
             positive_candidates = set(positive_candidates)
 
             # Randomly select 5 positive papers
-            if len(positive_candidates) < 5:
+            if len(positive_candidates) < 25:
                 positives = positive_candidates
             else:
-                positives = random.sample(positive_candidates, k=5)
+                positives = random.sample(positive_candidates, k=25)
             
             # Sample from the non-cited papers
             negative_candidates = all_paper_ids - positive_candidates
@@ -87,8 +87,7 @@ if __name__ == '__main__':
             if len(negative_candidates) < 50:
                 negatives = negative_candidates
             else:
-                # 100 papers to give some buffer(?) for the filtering later on
-                negatives = random.sample(negative_candidates, k=100)
+                negatives = random.sample(negative_candidates, k=50)
 
             for pos_id in positives:
                 qrel_file.write(str(p_id) + " 0 " + str(pos_id) + " 1\n")
