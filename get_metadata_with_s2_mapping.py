@@ -60,7 +60,8 @@ if __name__ == '__main__':
     print("Loading s2id_to_s2orc_paper_id json...")
     mapping_original = json.load(open(args.s2id_to_s2orc_paper_id_json, 'r'))
 
-    mapping = {v: k for k, v in mapping_original.items()}
+    # mapping = {v: k for k, v in mapping_original.items()}
+    mapping = {k: k for k in mapping_original}
 
     metadata_pool = multiprocessing.Pool(processes=args.num_processes)
     metadata_results = []
@@ -84,7 +85,7 @@ if __name__ == '__main__':
     # Write metadata to a file.
     print("Writing the metadata to metadata.json...")
     pathlib.Path(args.save_dir).mkdir(exist_ok=True)
-    output_file = open(os.path.join(args.save_dir, "extra_metadata.json"), 'w+')
+    output_file = open(os.path.join(args.save_dir, "train_extra_metadata.json"), 'w+')
 
     json.dump(metadata, output_file)
 
