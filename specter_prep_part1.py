@@ -64,6 +64,11 @@ def parse_metadata_shard(shard_num, fields=None):
         if paper['paper_id'] in output_citation_data.keys():
             print("Metadata shard {} Duplicate paper id {} found. Please check.".format(shard_num, paper['paper_id']))
         else:
+            
+            if args.cross_domain and len(paper['mag_field_of_study']) < 2:
+                pbar.update(1)
+                continue
+            
             # if args.fields_of_study is specified, only consider the papers from
             # those fields
             if fields and set(fields).isdisjoint(set(paper['mag_field_of_study'])):
@@ -233,6 +238,8 @@ if __name__ == '__main__':
     parser.add_argument(
         '--train_proportion',
         type=float, help='proportion of the generated dataset to be reserved for training.')
+
+    parser.add_argument('--cross_domain', default=False, action='store_true')
 
     args = parser.parse_args()
 
