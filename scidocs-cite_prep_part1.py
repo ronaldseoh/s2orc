@@ -70,7 +70,7 @@ def parse_metadata_shard(shard_num, fields=None):
         else:
             # if args.fields_of_study is specified, only consider the papers from
             # those fields
-            if fields and not set(fields).isdisjoint(set(paper['mag_field_of_study'])):
+            if fields and set(fields).isdisjoint(set(paper['mag_field_of_study'])):
                 pbar.update(1)
                 continue
 
