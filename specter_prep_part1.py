@@ -4,6 +4,7 @@ import multiprocessing
 import argparse
 import gzip
 import random
+import math
 import copy
 import gc
 import collections
@@ -416,6 +417,39 @@ if __name__ == '__main__':
 
         for field in paper_counts_by_field.keys():
             weights_by_field[field] /= weights_sum
+
+        for field in paper_ids_by_field.keys():
+            field_paper_ids = paper_ids_by_field[field]
+
+            adjusted_field_paper_ids_size = math.floor(weights_by_field[field] * total_paper_count)
+
+            adjusted_field_paper_ids = random.sample(field_paper_ids, adjusted_field_paper_ids_size)
+
+            val_size = int(len(adjusted_field_paper_ids) * args.val_proportion)
+            test_size = int(len(adjusted_field_paper_ids) * args.test_proportion)
+
+            if args.train_proportion:
+                train_size = int(len(adjusted_field_paper_ids) * args.train_proportion)
+            else:
+                train_size = len(adjusted_field_paper_ids) - val_size - test_size
+
+            for paper_id in adjusted_field_paper_ids[0:train_size]:
+                if not train_file_ids_written[paper_id]:
+                    train_file.write(paper_id + '\n')
+                    train_file_ids_written[paper_id] = True
+                mag_fields_by_paper_ids['train'][paper_id].append(field)
+
+            for paper_id in adjusted_field_paper_ids[train_size:train_size+val_size]:
+                if not val_file_ids_written[paper_id]:
+                    val_file.write(paper_id + '\n')
+                    val_file_ids_written[paper_id] = True
+                mag_fields_by_paper_ids['val'][paper_id].append(field)
+
+            for paper_id in adjusted_field_paper_ids[train_size+val_size:train_size+val_size+test_size]:
+                if not test_file_ids_written[paper_id]:
+                    test_file.write(paper_id + '\n')
+                    test_file_ids_written[paper_id] = True
+                mag_fields_by_paper_ids['test'][paper_id].append(field)
     else:
         for s in tqdm.tqdm(query_paper_ids_by_field_shards_list):
             for field in query_paper_ids_by_field_all_shard_sanitized[s].keys():
