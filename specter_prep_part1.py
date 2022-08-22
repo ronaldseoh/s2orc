@@ -423,7 +423,13 @@ if __name__ == '__main__':
 
             adjusted_field_paper_ids_size = math.floor(weights_by_field[field] * total_paper_count)
 
-            adjusted_field_paper_ids = random.sample(field_paper_ids, adjusted_field_paper_ids_size)
+            if adjusted_field_paper_ids_size < len(field_paper_ids):
+                adjusted_field_paper_ids = random.sample(field_paper_ids, adjusted_field_paper_ids_size)
+            else:
+                adjusted_field_paper_ids = field_paper_ids
+
+                if adjusted_field_paper_ids_size - len(adjusted_field_paper_ids) > 0:
+                    adjusted_field_paper_ids += random.sample(field_paper_ids, adjusted_field_paper_ids_size - len(adjusted_field_paper_ids))
 
             val_size = int(len(adjusted_field_paper_ids) * args.val_proportion)
             test_size = int(len(adjusted_field_paper_ids) * args.test_proportion)
