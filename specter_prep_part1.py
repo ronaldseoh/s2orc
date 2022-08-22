@@ -428,8 +428,14 @@ if __name__ == '__main__':
             else:
                 adjusted_field_paper_ids = field_paper_ids
 
-                if adjusted_field_paper_ids_size - len(adjusted_field_paper_ids) > 0:
-                    adjusted_field_paper_ids += random.sample(field_paper_ids, adjusted_field_paper_ids_size - len(adjusted_field_paper_ids))
+                if adjusted_field_paper_ids_size - len(field_paper_ids) > 0:
+                    oversample_count = adjusted_field_paper_ids_size - len(field_paper_ids)
+
+                    while oversample_count > 0:
+                        num_to_sample = min(oversample_count, len(field_paper_ids))
+                        oversampled_papers = random.sample(field_paper_ids, num_to_sample)
+                        adjusted_field_paper_ids += oversampled_papers
+                        oversample_count -= len(oversampled_papers)
 
             val_size = int(len(adjusted_field_paper_ids) * args.val_proportion)
             test_size = int(len(adjusted_field_paper_ids) * args.test_proportion)
