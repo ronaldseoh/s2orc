@@ -1,6 +1,6 @@
 # SPECTER/SciDocs data preparation with S2ORC
 
-Please also take a look at [the original S2ORC README](https://github.com/ronaldseoh/s2orc/blob/master/README_original.md) for the introduction to S2ORC. 
+Please also take a look at [the original S2ORC README](README_original.md) for the introduction to S2ORC. 
 
 The Python scripts currently present in this repository are written to parse the S2ORC data files into [the format that SPECTER's preprocessing code expects](https://github.com/ronaldseoh/specter#advanced-training-your-own-model). Note that the SPECTER authors have not released the instructions for generating the exact set of training data used to produce their results, although they have provided the pickled data files [here](https://github.com/allenai/specter/issues/2).
 
