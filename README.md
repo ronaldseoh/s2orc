@@ -1,4 +1,4 @@
-# SPECTER/SciDocs data preparation with S2ORC
+# Multi-domain SPECTER/SciDocs data preparation with S2ORC
 
 Please also take a look at [the original S2ORC README](README_original.md) for the introduction to S2ORC. 
 
