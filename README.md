@@ -1,10 +1,10 @@
-# SPECTER training data preparation with S2ORC
+# Multi-domain SPECTER/SciDocs data preparation with S2ORC
 
-Please also take a look at [the original S2ORC README](https://github.com/ronaldseoh/s2orc/blob/master/README_original.md) for the introduction to S2ORC. 
+Please also take a look at [the original S2ORC README](README_original.md) for the introduction to S2ORC. 
 
-The Python scripts currently present in this repository are written to parse the S2ORC data files into [the format that SPECTER's preprocessing code expects](https://github.com/ronaldseoh/specter#advanced-training-your-own-model). Note that the SPECTER authors have not released the instructions for generating the exact set of training data used to produce their results, although they have provided the pickled data files [here](https://github.com/allenai/specter/issues/2).
+The Python scripts currently present in this repository are written to parse the S2ORC data files into [the format that SPECTER's preprocessing code expects](https://github.com/allenai/specter#advanced-training-your-own-model). Note that the SPECTER authors have not released the instructions for generating the exact set of training data used to produce their results, although they have provided the pickled data files [here](https://github.com/allenai/specter/issues/2).
 
-## Overview
+## SPECTER training data
 
 In a nutshell, SPECTER needs two sets of data:
 
@@ -20,9 +20,9 @@ Nearly all the pieces of information we need to extract are included in the `met
 
 In addition, both `metadata` and `pdf_parses` are sharded into 100 gziped JSONL files. They were splitted randomly, so we would have to iterate through all the shards in order to find the paper of particular ID.
 
-## How to run
+### How to run
 
-### First, run `specter_prep_data.py` to create `data.json`.
+#### First, run `specter_prep_data.py` to create `data.json`.
 
 1. We first call `parse_metadata_shard()` for each metadata shards to obtain the following objects:
     - `output_citation_data`: the citation graph encoded in this shard file.
@@ -49,8 +49,45 @@ In addition, both `metadata` and `pdf_parses` are sharded into 100 gziped JSONL 
 
 Once we confirm that `specter_prep_data.py` ended without errors, then we can proceed to the next part with `specter_prep_metadata.py`.
 
-### Second, run `specter_prep_metadata.py` to create `metadata.json`.
+#### Second, run `specter_prep_metadata.py` to create `metadata.json`.
 
 1. For each paper ids in `all_paper_ids`, we check `safe_paper_ids` to check which shard # they belong to and record them in `all_paper_ids_by_shard`.
 2. We then call `parse_pdf_parses_shard` for each `pdf_parses` shard to extract abstracts of the papers that appear in `all_paper_ids_by_shard`. If the paper currently encoutered does appear in `all_paper_ids`, then we record the abstract to `output_metadata`, along with the titles that had already been extracted in `titles.json`.
 3. We dump `metadata` to `metadata.json`.
+
+
+## Multi-SciDocs `cite` and `co-cite` dataset
+
+Please run the following commands, one by one. You will want to adjust `num_processes` based on the number of cores available on your system:
+
+### `cite`
+
+
+```bash
+python3 scidocs-cite_prep_part1.py ../new/20200705v1/full/ scidocs-shard7 --num_processes 24 --shards 7
+```
+
+```bash
+python3 scidocs-cite_prep_part2.py scidocs-shard7/data.json scidocs-shard7/paper_ids.json scidocs-shard7/safe_paper_ids.json scidocs-shard7/titles.json ../new/20200705v1/full/ scidocs-shard7 --num_processes 24
+```
+
+```bash
+python3 scidocs-cite_prep_part3.py scidocs-shard7/data_final.json scidocs-shard7/paper_ids.json scidocs-shard7/test.txt scidocs-shard7/cite/test.qrel --max_num_positives 5 --max_num_negatives 500 
+```
+
+### `co-cite`
+
+
+```bash
+python3 scidocs-cite_prep_part1.py ../new/20200705v1/full/ scidocs-shard7-cocite --num_processes 24 --shards 7 --cocite
+```
+
+```bash
+python3 scidocs-cite_prep_part2.py scidocs-shard7-cocite/data.json scidocs-shard7-cocite/paper_ids.json scidocs-shard7-cocite/safe_paper_ids.json scidocs-shard7-cocite/titles.json ../new/20200705v1/full/ scidocs-shard7-cocite --num_processes 24
+```
+
+```bash
+python3 scidocs-cite_prep_part3.py scidocs-shard7-cocite/data_final.json scidocs-shard7-cocite/paper_ids.json scidocs-shard7-cocite/test.txt scidocs-shard7-cocite/cocite/test.qrel --max_num_positives 5 --max_num_negatives 500 --cocite
+```
+
+Please feed the resulting `json` file to `embed.py` in Multi^2SPE to get paper embeddings. Then plug in both the resulting embeddings and `qrel` files into SciDocs.
